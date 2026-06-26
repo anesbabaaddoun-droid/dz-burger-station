@@ -50,7 +50,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="space-y-6 max-w-4xl w-full mx-auto box-border pb-24">
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-[#1A1A1A]">Settings</h1>
@@ -71,7 +71,7 @@ export default function SettingsPage() {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-semibold text-[#1A1A1A] mb-2">Phone</label>
               <input
@@ -149,37 +149,36 @@ export default function SettingsPage() {
         <h2 className="text-xl font-bold text-[#1A1A1A] mb-6">Weekly Schedule</h2>
         <div className="space-y-3">
           {schedule.map((day, idx) => (
-            <div key={idx} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
-              <div className="w-24">
-                <p className="font-semibold text-[#1A1A1A]">{day.day}</p>
+            <div key={idx} className="flex flex-col sm:flex-row sm:items-center gap-4 p-3 bg-gray-50 rounded-lg w-full box-border">
+              <div className="flex items-center justify-between w-full sm:w-auto">
+                <p className="font-semibold text-[#1A1A1A] sm:w-24">{day.day}</p>
+                <label className="flex items-center gap-2 sm:w-auto">
+                  <input
+                    type="checkbox"
+                    checked={day.closed}
+                    onChange={(e) => handleScheduleChange(idx, 'closed', e.target.checked)}
+                    className="h-4 w-4 rounded accent-[#B91C1C]"
+                  />
+                  <span className="text-sm text-[#6B7280]">Closed</span>
+                </label>
               </div>
 
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={day.closed}
-                  onChange={(e) => handleScheduleChange(idx, 'closed', e.target.checked)}
-                  className="h-4 w-4 rounded accent-[#B91C1C]"
-                />
-                <span className="text-sm text-[#6B7280]">Closed</span>
-              </label>
-
               {!day.closed && (
-                <>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto sm:flex-1">
                   <input
                     type="time"
                     value={day.open}
                     onChange={(e) => handleScheduleChange(idx, 'open', e.target.value)}
-                    className="px-3 py-1 border border-[#E5E7EB] rounded text-sm"
+                    className="w-full sm:w-auto px-3 py-2 sm:py-1 border border-[#E5E7EB] rounded text-sm box-border flex-1"
                   />
-                  <span className="text-[#6B7280]">to</span>
+                  <span className="hidden sm:inline text-[#6B7280]">to</span>
                   <input
                     type="time"
                     value={day.close}
                     onChange={(e) => handleScheduleChange(idx, 'close', e.target.value)}
-                    className="px-3 py-1 border border-[#E5E7EB] rounded text-sm"
+                    className="w-full sm:w-auto px-3 py-2 sm:py-1 border border-[#E5E7EB] rounded text-sm box-border flex-1"
                   />
-                </>
+                </div>
               )}
             </div>
           ))}
@@ -235,18 +234,18 @@ export default function SettingsPage() {
       </div>
 
       {/* Save Bar */}
-      <div className="sticky bottom-4 mt-4 flex items-center justify-between gap-4 rounded-2xl border border-[#E5E7EB] bg-white/95 backdrop-blur px-5 py-4 shadow-lg">
-        <p className="text-sm text-[#6B7280]">
+      <div className="fixed bottom-4 left-4 right-4 sm:static sm:mt-4 flex flex-col sm:flex-row items-center justify-between gap-4 rounded-2xl border border-[#E5E7EB] bg-white/95 backdrop-blur px-5 py-4 shadow-lg w-[calc(100%-2rem)] sm:w-full mx-auto box-border text-center sm:text-left z-20">
+        <p className="text-sm text-[#6B7280] w-full sm:w-auto">
           {saved ? (
             <span className="text-[#22C55E] font-semibold">✓ Changes saved</span>
           ) : (
-            'Unsaved changes are kept locally until you save.'
+            'Unsaved changes are kept locally.'
           )}
         </p>
         <button
           onClick={handleSave}
           disabled={isSaving}
-          className="flex items-center gap-2 bg-[#B91C1C] hover:bg-[#991B1B] disabled:opacity-60 text-white font-bold px-6 py-2.5 rounded-full transition-colors shadow-sm"
+          className="flex items-center justify-center gap-2 bg-[#B91C1C] hover:bg-[#991B1B] disabled:opacity-60 text-white font-bold w-full sm:w-auto px-6 py-3 sm:py-2.5 rounded-full transition-colors shadow-sm box-border"
         >
           <Save className="h-4 w-4" /> {isSaving ? 'Saving…' : 'Save Changes'}
         </button>

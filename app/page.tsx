@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { ShoppingCart, Search, X, Flame, Moon, Sun, ChevronLeft, ChevronRight, Menu, ChevronDown } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -60,7 +60,7 @@ export default function Home() {
     [selectedSizes]
   );
 
-  const handleQuickAdd = (e: React.MouseEvent, item: (typeof menuItems)[0]) => {
+  const handleQuickAdd = (e: React.MouseEvent<HTMLButtonElement>, item: (typeof menuItems)[0]) => {
     e.preventDefault();
     e.stopPropagation();
     const variant = getSelectedVariant(item);
@@ -433,7 +433,7 @@ export default function Home() {
                     <button
                       onClick={() => {
                         setSearchQuery('');
-                        setSelectedCategory('burgers');
+                        setSelectedCategory(null);
                       }}
                       className="text-[#E8A33D] hover:text-[#B91C1C] font-semibold"
                     >

@@ -1,0 +1,238 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-heading: var(--font-display);
+  --font-sans: var(--font-inter), 'Inter Fallback';
+  --font-mono: var(--font-jbmono), 'JetBrains Mono Fallback';
+  --font-display: var(--font-bebas), 'Bebas Neue Fallback';
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  color-scheme: light;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+  color-scheme: dark;
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+    color-scheme: dark;
+    --background: oklch(0.145 0 0);
+    --foreground: oklch(0.985 0 0);
+    --card: oklch(0.205 0 0);
+    --card-foreground: oklch(0.985 0 0);
+    --popover: oklch(0.205 0 0);
+    --popover-foreground: oklch(0.985 0 0);
+    --primary: oklch(0.922 0 0);
+    --primary-foreground: oklch(0.205 0 0);
+    --secondary: oklch(0.269 0 0);
+    --secondary-foreground: oklch(0.985 0 0);
+    --muted: oklch(0.269 0 0);
+    --muted-foreground: oklch(0.708 0 0);
+    --accent: oklch(0.269 0 0);
+    --accent-foreground: oklch(0.985 0 0);
+    --destructive: oklch(0.704 0.191 22.216);
+    --border: oklch(1 0 0 / 10%);
+    --input: oklch(1 0 0 / 15%);
+    --ring: oklch(0.556 0 0);
+    --chart-1: oklch(0.87 0 0);
+    --chart-2: oklch(0.556 0 0);
+    --chart-3: oklch(0.439 0 0);
+    --chart-4: oklch(0.371 0 0);
+    --chart-5: oklch(0.269 0 0);
+    --sidebar: oklch(0.205 0 0);
+    --sidebar-foreground: oklch(0.985 0 0);
+    --sidebar-primary: oklch(0.488 0.243 264.376);
+    --sidebar-primary-foreground: oklch(0.985 0 0);
+    --sidebar-accent: oklch(0.269 0 0);
+    --sidebar-accent-foreground: oklch(0.985 0 0);
+    --sidebar-border: oklch(1 0 0 / 10%);
+    --sidebar-ring: oklch(0.556 0 0);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
+
+/* ===== Admin Dark Mode Override ===== */
+/* Toggled by adding `.admin-dark` on the admin shell wrapper. Recolors the
+   compiled utility classes already used across the Admin pages so dark mode
+   works site-wide without rewriting every component. */
+.admin-dark {
+  background-color: #0F0F0F;
+  color: #F5F5F5;
+}
+.admin-dark .bg-white { background-color: #1A1A1A !important; }
+.admin-dark .bg-\[\#FAFAFA\] { background-color: #0F0F0F !important; }
+.admin-dark .bg-gray-50 { background-color: #1A1A1A !important; }
+.admin-dark .bg-gray-100 { background-color: #242424 !important; }
+.admin-dark .bg-gray-200 { background-color: #2E2E2E !important; }
+.admin-dark .bg-gray-300 { background-color: #3A3A3A !important; }
+.admin-dark .text-\[\#1A1A1A\] { color: #F5F5F5 !important; }
+.admin-dark .text-\[\#6B7280\] { color: #9CA3AF !important; }
+.admin-dark .border-\[\#E5E7EB\] { border-color: #2E2E2E !important; }
+.admin-dark .border-gray-200 { border-color: #2E2E2E !important; }
+.admin-dark input,
+.admin-dark select,
+.admin-dark textarea {
+  background-color: #1A1A1A;
+  color: #F5F5F5;
+  border-color: #2E2E2E;
+}
+.admin-dark ::placeholder { color: #6B6B6B; }
+
+/* ===== Customer Light Theme Override ===== */
+/* Default customer theme is dark (Smokehouse Ticket identity). Toggling
+   light mode adds `.theme-light` on <html> and remaps the compiled dark
+   utility classes already used across the Customer pages to a warm
+   "order-ticket paper" palette, without rewriting every component. */
+html.theme-light body { background-color: #F5EFE3; color: #1F1812; }
+html.theme-light .bg-\[\#161210\] { background-color: #F5EFE3 !important; }
+html.theme-light .bg-\[\#1B1410\] { background-color: #FFFFFF !important; }
+html.theme-light .bg-\[\#1F1812\] { background-color: #FFFFFF !important; }
+html.theme-light .bg-\[\#241B16\] { background-color: #EFE6D4 !important; }
+html.theme-light .bg-\[\#2A2018\] { background-color: #E9DEC8 !important; }
+html.theme-light .border-\[\#3A2C22\] { border-color: #DED2BA !important; }
+html.theme-light .text-\[\#F3EDE3\] { color: #1F1812 !important; }
+html.theme-light .text-\[\#A89A8C\] { color: #786C59 !important; }
+html.theme-light .text-\[\#6B6358\] { color: #998C75 !important; }
+html.theme-light .text-\[\#3A2C22\] { color: #4A3F30 !important; }
+html.theme-light .text-\[\#E8A33D\] { color: #A66A12 !important; }
+html.theme-light .border-\[\#F3EDE3\] { border-color: #DED2BA !important; }
+html.theme-light ::placeholder { color: #A8997E; }
+
+/* ===== Hero Section — Force white text in Light Mode ===== */
+html.theme-light .hero-section .hero-title {
+  color: #F3EDE3 !important;
+}
+
+html.theme-light .hero-section .hero-title:hover {
+  color: #E8A33D !important;
+}
+
+html.theme-light .hero-section .hero-label {
+  color: #E8A33D !important;
+}
+
+html.theme-light .hero-section .hero-arrow {
+  color: #ffffff !important;
+}
+
+html.theme-light .hero-section .hero-btn {
+  color: #ffffff !important;
+}

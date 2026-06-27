@@ -30,19 +30,13 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     if (savedTheme === 'dark') setDarkMode(true);
   }, []);
 
-  // Auth guard — protects every /admin/* route except /admin/login
+  // Auth guard — temporarily disabled
   useEffect(() => {
     if (pathname === '/admin/login') {
-      setChecked(true);
+      router.replace('/admin');
       return;
     }
-    const hasCookie = document.cookie.includes('adminAuth=true');
-    const hasLocal = localStorage.getItem('adminAuth') === 'true';
-    if (!hasCookie && !hasLocal) {
-      router.replace('/admin/login');
-    } else {
-      setChecked(true);
-    }
+    setChecked(true);
   }, [pathname, router]);
 
   const toggleDarkMode = () => {
@@ -59,7 +53,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
   // Don't show sidebar on login page
   if (pathname === '/admin/login') {
-    return <div className="min-h-screen bg-[#FAFAFA]">{children}</div>;
+    return null;
   }
 
   if (!checked) {

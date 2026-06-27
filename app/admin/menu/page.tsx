@@ -188,10 +188,10 @@ export default function MenuPage() {
 
       {/* Add Product Modal */}
       {showAddProduct && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-[#1A1A1A]">Add New Product</h2>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-end sm:justify-center z-[100] p-0 sm:p-4">
+          <div className="bg-white rounded-t-2xl sm:rounded-xl w-full max-w-full sm:max-w-2xl max-h-[90vh] sm:max-h-[85vh] flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 sm:slide-in-from-bottom-0 sm:zoom-in-95 box-border">
+            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-[#E5E7EB] shrink-0 bg-white">
+              <h2 className="text-xl sm:text-2xl font-bold text-[#1A1A1A]">Add New Product</h2>
               <button
                 onClick={() => {
                   setShowAddProduct(false);
@@ -203,8 +203,8 @@ export default function MenuPage() {
                 <X className="h-6 w-6" />
               </button>
             </div>
-
-            <div className="space-y-4">
+            
+            <div className="overflow-y-auto p-4 sm:p-6 space-y-4 flex-1 box-border w-full">
               {/* Name */}
               <div>
                 <label className="block text-sm font-semibold text-[#1A1A1A] mb-2">Product Name</label>
@@ -291,20 +291,20 @@ export default function MenuPage() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex gap-4 pt-4 border-t border-[#E5E7EB]">
+              <div className="flex gap-4 pt-4 shrink-0 bg-white border-t border-[#E5E7EB]">
                 <button
                   onClick={() => {
                     setShowAddProduct(false);
                     setIngredients([]);
                     setIngredientInput('');
                   }}
-                  className="flex-1 px-4 py-2 border-2 border-[#E5E7EB] text-[#1A1A1A] font-semibold rounded-full hover:bg-gray-100"
+                  className="flex-1 px-4 py-3 sm:py-2 border-2 border-[#E5E7EB] text-[#1A1A1A] font-semibold rounded-full hover:bg-gray-100"
                 >
                   Cancel
                 </button>
                 <button
                   disabled={ingredients.length === 0}
-                  className="flex-1 px-4 py-2 bg-[#B91C1C] text-white font-semibold rounded-full hover:bg-[#991B1B] disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 px-4 py-3 sm:py-2 bg-[#B91C1C] text-white font-semibold rounded-full hover:bg-[#991B1B] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Save Product
                 </button>

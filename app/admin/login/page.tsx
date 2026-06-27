@@ -16,8 +16,9 @@ export default function LoginPage() {
     setIsLoading(true);
 
     // Mock authentication - in production this would call an API
-    if (username === 'admin' && password === 'password') {
+    if (username === 'manager' && password === 'admin123') {
       // Store auth state (in production, use proper session/auth)
+      document.cookie = "adminAuth=true; path=/; max-age=31536000; SameSite=Lax";
       localStorage.setItem('adminAuth', 'true');
       router.push('/admin');
     } else {
@@ -77,12 +78,7 @@ export default function LoginPage() {
               </div>
             )}
 
-            {/* Demo Credentials */}
-            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-xs font-semibold text-blue-900 mb-1">Demo Credentials:</p>
-              <p className="text-xs text-blue-800">Username: <span className="font-mono">admin</span></p>
-              <p className="text-xs text-blue-800">Password: <span className="font-mono">password</span></p>
-            </div>
+
 
             {/* Login Button */}
             <button

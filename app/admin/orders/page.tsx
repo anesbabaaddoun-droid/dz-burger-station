@@ -151,8 +151,8 @@ export default function OrdersPage() {
       <div className="space-y-4">
         {filteredOrders.length > 0 ? (
           filteredOrders.map((order) => (
-            <div key={order.id} className="bg-white rounded-xl border border-[#E5E7EB] p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div key={order.id} className="bg-white rounded-xl border border-[#E5E7EB] p-4 sm:p-6 w-full max-w-full box-border overflow-hidden">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                 {/* Left: Order Details */}
                 <div>
                   <div className="flex items-start justify-between mb-4">

@@ -67,7 +67,7 @@ export default function AdminDashboard() {
         {/* Mobile View: Cards */}
         <div className="grid grid-cols-1 gap-4 md:hidden">
           {recentOrders.map((order) => (
-            <div key={order.id} className="border border-[#E5E7EB] rounded-lg p-4 space-y-3">
+            <div key={order.id} className="border border-[#E5E7EB] rounded-lg p-4 space-y-3 w-full max-w-full box-border overflow-hidden">
               <div className="flex justify-between items-start">
                 <div>
                   <p className="text-sm font-mono text-[#6B7280]">{order.id}</p>

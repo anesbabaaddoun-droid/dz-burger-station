@@ -36,8 +36,9 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       setChecked(true);
       return;
     }
-    const isAuthed = localStorage.getItem('adminAuth') === 'true';
-    if (!isAuthed) {
+    const hasCookie = document.cookie.includes('adminAuth=true');
+    const hasLocal = localStorage.getItem('adminAuth') === 'true';
+    if (!hasCookie && !hasLocal) {
       router.replace('/admin/login');
     } else {
       setChecked(true);
@@ -51,6 +52,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   };
 
   const handleLogout = () => {
+    document.cookie = "adminAuth=; path=/; max-age=0";
     localStorage.removeItem('adminAuth');
     router.push('/admin/login');
   };

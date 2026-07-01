@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { ShoppingCart, Search, X, Flame, Moon, Sun, ChevronLeft, ChevronRight, Menu, ChevronDown } from 'lucide-react';
+import { ShoppingCart, Search, X, Flame, Moon, Sun, ChevronLeft, ChevronRight, Menu, ChevronDown, Mic, MicOff } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { categories, menuItems, settings } from '@/lib/mock-data';
@@ -21,6 +21,8 @@ export default function Home() {
   const [slide, setSlide] = useState(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMenuDropdownOpen, setIsMenuDropdownOpen] = useState(false);
+  const [isAIListening, setIsAIListening] = useState(false);
+  const [showAITooltip, setShowAITooltip] = useState(false);
   const { getItemCount, addItem } = useCart();
   const { theme, toggleTheme } = useTheme();
 
@@ -446,6 +448,46 @@ export default function Home() {
           )}
         </div>
       </main>
+
+      {/* AI Voice Ordering FAB */}
+      <div className="fixed bottom-24 right-6 z-40 flex flex-col items-end gap-2">
+        {/* Tooltip */}
+        {showAITooltip && !isAIListening && (
+          <div className="bg-[#1B1410] text-[#F3EDE3] text-xs font-semibold px-3 py-1.5 rounded-full shadow-lg whitespace-nowrap mr-1 animate-in fade-in slide-in-from-right-2 duration-200">
+            🎙️ Order by voice
+          </div>
+        )}
+        {/* Listening label */}
+        {isAIListening && (
+          <div className="bg-violet-600 text-white text-xs font-semibold px-3 py-1.5 rounded-full shadow-lg whitespace-nowrap mr-1 animate-in fade-in duration-200">
+            Listening…
+          </div>
+        )}
+        <button
+          id="ai-voice-fab"
+          onClick={() => setIsAIListening((v) => !v)}
+          onMouseEnter={() => setShowAITooltip(true)}
+          onMouseLeave={() => setShowAITooltip(false)}
+          aria-label="AI voice ordering"
+          className={`relative w-14 h-14 rounded-full flex items-center justify-center shadow-xl transition-all duration-300 hover:scale-110 active:scale-95 ${
+            isAIListening
+              ? 'bg-violet-600 shadow-violet-500/50'
+              : 'bg-gradient-to-br from-violet-500 to-purple-700 shadow-purple-900/60'
+          }`}
+        >
+          {/* Pulse rings when listening */}
+          {isAIListening && (
+            <>
+              <span className="absolute inset-0 rounded-full bg-violet-500 animate-ping opacity-40" />
+              <span className="absolute -inset-2 rounded-full border-2 border-violet-400/40 animate-pulse" />
+            </>
+          )}
+          {isAIListening
+            ? <MicOff className="h-6 w-6 text-white relative z-10" />
+            : <Mic className="h-6 w-6 text-white relative z-10" />
+          }
+        </button>
+      </div>
 
       {/* Floating Cart Button */}
       <button

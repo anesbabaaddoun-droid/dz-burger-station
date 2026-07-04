@@ -1,6 +1,9 @@
 'use client';
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import Vapi from "@vapi-ai/web";
+const vapi = new Vapi("2fc3d13c-0488-477d-9a19-f8b64b325445");
+const ASSISTANT_ID = "c954787b-3046-42cc-b80f-f807c1e52fcd";
 import { ShoppingCart, Search, X, Flame, Moon, Sun, ChevronLeft, ChevronRight, Menu, ChevronDown, Mic, MicOff } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -21,6 +24,19 @@ export default function Home() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMenuDropdownOpen, setIsMenuDropdownOpen] = useState(false);
   const [isAIListening, setIsAIListening] = useState(false);
+  const [isAILoading, setIsAILoading] = useState(false);
+
+  useEffect(() => {
+    vapi.on("call-start", () => {
+      setIsAIListening(true);
+      setIsAILoading(false);
+    });
+    vapi.on("call-end", () => {
+      setIsAIListening(false);
+      setIsAILoading(false);
+    });
+    return () => { vapi.removeAllListeners(); };
+  }, []);
   const { getItemCount, addItem } = useCart();
   const { theme, toggleTheme } = useTheme();
 
@@ -98,7 +114,7 @@ export default function Home() {
           >
             {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </button>
-          <button 
+          <button
             onClick={() => setIsMobileMenuOpen(true)}
             className="p-2 rounded-lg transition-colors hover:bg-black/10 dark:hover:bg-white/10"
             aria-label="Menu"
@@ -118,7 +134,7 @@ export default function Home() {
                 <BrandLogo size="sm" />
                 <span className="font-display text-lg tracking-wide text-[#F3EDE3]">Action Hub</span>
               </div>
-              <button 
+              <button
                 onClick={() => setIsMobileMenuOpen(false)}
                 className="p-2 text-[#A89A8C] hover:text-[#F3EDE3] hover:bg-[#241B16] rounded-lg transition-colors"
               >
@@ -136,53 +152,53 @@ export default function Home() {
                     setSelectedCategory(null);
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
-                className="w-full text-left px-4 py-3 text-[#F3EDE3] font-bold text-lg rounded-lg hover:bg-[#241B16] transition-colors flex items-center justify-between"
-              >
-                <span>Home</span>
-              </button>
-              
-              <div className="w-full">
-                <button
-                  onClick={() => setIsMenuDropdownOpen(!isMenuDropdownOpen)}
                   className="w-full text-left px-4 py-3 text-[#F3EDE3] font-bold text-lg rounded-lg hover:bg-[#241B16] transition-colors flex items-center justify-between"
                 >
-                  <div className="flex items-center gap-2">
-                    <span>Menu</span>
-                    <ChevronDown className={`h-4 w-4 transition-transform ${isMenuDropdownOpen ? 'rotate-180' : ''}`} />
-                  </div>
+                  <span>Home</span>
                 </button>
-                {isMenuDropdownOpen && (
-                  <div className="pl-4 pr-2 py-2 space-y-1 bg-[#161210] rounded-b-lg border border-[#3A2C22] border-t-0 mx-2 mb-2">
-                    {categories.map(cat => (
-                      <button
-                        key={cat.id}
-                        onClick={() => {
-                          setSelectedCategory(cat.id);
-                          setIsMobileMenuOpen(false);
-                          document.getElementById('menu-section')?.scrollIntoView({ behavior: 'smooth' });
-                        }}
-                        className="w-full text-left px-4 py-2.5 text-[#F3EDE3] text-sm rounded-md hover:bg-[#241B16] transition-colors flex items-center gap-3"
-                      >
-                        <div className="relative w-6 h-6 rounded bg-[#241B16] flex-shrink-0 overflow-hidden">
-                          <Image src={cat.imageUrl} alt={cat.name} fill className="object-cover" />
-                        </div>
-                        {cat.name}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
 
-              <button
-                onClick={() => {
-                  setIsMobileMenuOpen(false);
-                  setIsCartOpen(true);
-                }}
-                className="w-full text-left px-4 py-3 text-[#F3EDE3] font-bold text-lg rounded-lg hover:bg-[#241B16] transition-colors flex items-center justify-between"
-              >
-                <span>Cart</span>
-              </button>
-            </div>
+                <div className="w-full">
+                  <button
+                    onClick={() => setIsMenuDropdownOpen(!isMenuDropdownOpen)}
+                    className="w-full text-left px-4 py-3 text-[#F3EDE3] font-bold text-lg rounded-lg hover:bg-[#241B16] transition-colors flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span>Menu</span>
+                      <ChevronDown className={`h-4 w-4 transition-transform ${isMenuDropdownOpen ? 'rotate-180' : ''}`} />
+                    </div>
+                  </button>
+                  {isMenuDropdownOpen && (
+                    <div className="pl-4 pr-2 py-2 space-y-1 bg-[#161210] rounded-b-lg border border-[#3A2C22] border-t-0 mx-2 mb-2">
+                      {categories.map(cat => (
+                        <button
+                          key={cat.id}
+                          onClick={() => {
+                            setSelectedCategory(cat.id);
+                            setIsMobileMenuOpen(false);
+                            document.getElementById('menu-section')?.scrollIntoView({ behavior: 'smooth' });
+                          }}
+                          className="w-full text-left px-4 py-2.5 text-[#F3EDE3] text-sm rounded-md hover:bg-[#241B16] transition-colors flex items-center gap-3"
+                        >
+                          <div className="relative w-6 h-6 rounded bg-[#241B16] flex-shrink-0 overflow-hidden">
+                            <Image src={cat.imageUrl} alt={cat.name} fill className="object-cover" />
+                          </div>
+                          {cat.name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    setIsCartOpen(true);
+                  }}
+                  className="w-full text-left px-4 py-3 text-[#F3EDE3] font-bold text-lg rounded-lg hover:bg-[#241B16] transition-colors flex items-center justify-between"
+                >
+                  <span>Cart</span>
+                </button>
+              </div>
             </div>
           </aside>
         </div>
@@ -193,7 +209,7 @@ export default function Home() {
         <section className="hero-section relative w-full h-[85vh] sm:h-[70vh] lg:h-[80vh] bg-[#161210] bg-[url('/images/hero_banner.png')] bg-cover bg-right bg-no-repeat border-b border-[#3A2C22] flex items-center justify-start overflow-hidden">
           {/* Subtle dark gradient overlay for text readability */}
           <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent pointer-events-none" />
-          
+
           <div className="w-full px-6 sm:px-12 lg:px-20 max-w-7xl mx-auto box-border relative z-10 flex flex-col items-start justify-center text-left">
             <p className="font-mono text-xs sm:text-base uppercase tracking-widest text-[#FDE047] font-bold mb-4 drop-shadow-md">
               Signature Collection
@@ -204,7 +220,7 @@ export default function Home() {
             <p className="text-base sm:text-lg text-white mb-8 max-w-sm sm:max-w-md font-medium drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] leading-snug">
               Experience the ultimate taste with our handcrafted special, made fresh to order.
             </p>
-            <button 
+            <button
               onClick={() => document.getElementById('menu-section')?.scrollIntoView({ behavior: 'smooth' })}
               className="bg-[#FDE047] hover:bg-[#FACC15] text-[#B91C1C] font-black uppercase text-sm sm:text-base tracking-widest px-8 py-3.5 sm:py-4 rounded-full shadow-xl transition-colors shrink-0"
             >
@@ -215,21 +231,27 @@ export default function Home() {
 
         {/* Integrated AI Voice Section */}
         <section className="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-5xl mx-auto box-border">
-          <div className={`relative overflow-hidden rounded-[32px] p-8 sm:p-12 flex flex-col items-center justify-center text-center transition-colors duration-300 border-2 ${
-            isAIListening 
-              ? 'bg-violet-900/40 border-violet-500/50 shadow-[0_0_50px_rgba(124,58,237,0.3)]' 
+          <div className={`relative overflow-hidden rounded-[32px] p-8 sm:p-12 flex flex-col items-center justify-center text-center transition-colors duration-300 border-2 ${isAIListening
+              ? 'bg-violet-900/40 border-violet-500/50 shadow-[0_0_50px_rgba(124,58,237,0.3)]'
               : 'bg-[#1F1812] border-[#3A2C22] shadow-xl'
-          }`}>
+            }`}>
             <div className="absolute inset-0 bg-[url('/noise.png')] opacity-5 mix-blend-overlay pointer-events-none" />
             <div className={`absolute top-0 left-1/2 -translate-x-1/2 w-[200%] h-full bg-gradient-to-b from-violet-600/10 to-transparent pointer-events-none transition-opacity duration-300 ${isAIListening ? 'opacity-100' : 'opacity-0'}`} />
-            
+
             <button
-              onClick={() => setIsAIListening((v) => !v)}
+              onClick={async () => {
+                if (isAIListening) {
+                  vapi.stop();
+                } else {
+                  setIsAILoading(true);
+                  await vapi.start(ASSISTANT_ID);
+                }
+              }}
+              disabled={isAILoading}
               className="relative z-10 flex flex-col items-center justify-center gap-4"
             >
-              <div className={`w-24 h-24 sm:w-32 sm:h-32 rounded-full flex items-center justify-center relative transition-colors duration-300 ${
-                isAIListening ? 'bg-violet-600' : 'bg-black border-2 border-violet-600 shadow-[0_0_15px_rgba(124,58,237,0.5)]'
-              }`}>
+              <div className={`w-24 h-24 sm:w-32 sm:h-32 rounded-full flex items-center justify-center relative transition-colors duration-300 ${isAIListening ? 'bg-violet-600' : 'bg-black border-2 border-violet-600 shadow-[0_0_15px_rgba(124,58,237,0.5)]'
+                }`}>
                 {isAIListening && (
                   <>
                     <span className="absolute inset-0 rounded-full bg-violet-500 animate-ping opacity-60" />
@@ -240,14 +262,14 @@ export default function Home() {
                 {isAIListening ? <MicOff className="h-10 w-10 sm:h-12 sm:w-12 text-white relative z-10 animate-pulse" /> : <Mic className="h-10 w-10 sm:h-12 sm:w-12 text-white relative z-10" />}
               </div>
             </button>
-            
+
             <div className="mt-8 relative z-10 max-w-lg">
               <h2 className="font-display text-3xl sm:text-4xl uppercase tracking-wide text-[#F3EDE3] mb-3">
                 {isAIListening ? 'Listening...' : 'Order with Voice AI'}
               </h2>
               <p className="text-[#A89A8C] text-base sm:text-lg">
-                {isAIListening 
-                  ? 'Speak clearly into your microphone. Tell us what you are craving.' 
+                {isAIListening
+                  ? 'Speak clearly into your microphone. Tell us what you are craving.'
                   : 'Tap the microphone and tell our smart assistant what you want to order. Hands-free and fast.'}
               </p>
             </div>
@@ -284,7 +306,7 @@ export default function Home() {
           ) : (
             <div className="w-full box-border">
               {/* Back to Categories Button */}
-              <button 
+              <button
                 onClick={() => setSelectedCategory(null)}
                 className="mb-6 inline-flex items-center gap-2 text-[#A89A8C] hover:text-[#E8A33D] transition-colors font-mono text-sm uppercase tracking-wider"
               >
@@ -364,11 +386,10 @@ export default function Home() {
                                       e.stopPropagation();
                                       setSelectedSizes((prev) => ({ ...prev, [item.id]: v.id }));
                                     }}
-                                    className={`px-2.5 py-1 rounded-full text-[11px] font-semibold font-mono border transition-colors ${
-                                      (selectedSizes[item.id] ?? item.variants[0].id) === v.id
+                                    className={`px-2.5 py-1 rounded-full text-[11px] font-semibold font-mono border transition-colors ${(selectedSizes[item.id] ?? item.variants[0].id) === v.id
                                         ? 'bg-[#B91C1C] text-[#F3EDE3] border-[#B91C1C]'
                                         : 'bg-transparent text-[#A89A8C] border-[#3A2C22] hover:border-[#E8A33D]/50'
-                                    }`}
+                                      }`}
                                   >
                                     {v.name} {formatDA(item.basePrice + v.priceModifier)}
                                   </button>

@@ -88,7 +88,7 @@ const ORDER_TYPE_STYLES: Record<string, string> = {
 function StatusBadge({ status }: { status: string }) {
   const s = STATUS_COLORS[status] ?? { bg: 'bg-gray-100', text: 'text-gray-600', dot: 'bg-gray-400' };
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${s.bg} ${s.text}`}>
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${s.bg} ${s.text} admin-dark:text-white`}>
       <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
       {status}
     </span>
@@ -103,12 +103,12 @@ function Modal({ order, onClose, onConfirm, onDelete }: {
 }) {
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4"
       style={{ backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+        className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-lg overflow-hidden max-h-[90dvh] flex flex-col animate-in fade-in slide-in-from-bottom-4 sm:zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
@@ -126,7 +126,7 @@ function Modal({ order, onClose, onConfirm, onDelete }: {
         </div>
 
         {/* Modal Body */}
-        <div className="px-6 py-5 space-y-5">
+        <div className="px-5 sm:px-6 py-4 sm:py-5 space-y-4 sm:space-y-5 overflow-y-auto">
           {/* Customer Info */}
           <div className="flex items-start gap-4">
             <div className="w-10 h-10 rounded-full bg-[#B91C1C]/10 flex items-center justify-center flex-shrink-0">
@@ -228,15 +228,15 @@ export default function OrdersPage() {
       </div>
 
       {/* Filtering Toolbar */}
-      <div className="bg-white border border-[#E5E7EB] rounded-xl p-4 flex flex-wrap gap-3 items-center">
-        <span className="text-sm font-semibold text-[#374151] mr-1">Filter by:</span>
+      <div className="bg-white admin-dark:bg-black border border-[#E5E7EB] admin-dark:border-[#2E2E2E] rounded-xl p-3 sm:p-4 flex flex-wrap gap-2 sm:gap-3 items-center">
+        <span className="text-sm font-semibold text-[#374151] w-full sm:w-auto">Filter by:</span>
 
         {/* Status filter */}
-        <div className="relative">
+        <div className="relative flex-1 sm:flex-none">
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="appearance-none pl-3 pr-8 py-2 border border-[#E5E7EB] rounded-lg bg-white text-sm text-[#1A1A1A] focus:outline-none focus:ring-2 focus:ring-[#B91C1C] cursor-pointer"
+            className="appearance-none w-full sm:w-auto pl-3 pr-8 py-2 border border-[#E5E7EB] rounded-lg bg-white text-sm text-[#1A1A1A] focus:outline-none focus:ring-2 focus:ring-[#B91C1C] cursor-pointer"
           >
             <option value="">All Statuses</option>
             <option value="Pending">Pending</option>
@@ -248,11 +248,11 @@ export default function OrdersPage() {
         </div>
 
         {/* Source filter */}
-        <div className="relative">
+        <div className="relative flex-1 sm:flex-none">
           <select
             value={filterSource}
             onChange={(e) => setFilterSource(e.target.value)}
-            className="appearance-none pl-3 pr-8 py-2 border border-[#E5E7EB] rounded-lg bg-white text-sm text-[#1A1A1A] focus:outline-none focus:ring-2 focus:ring-[#B91C1C] cursor-pointer"
+            className="appearance-none w-full sm:w-auto pl-3 pr-8 py-2 border border-[#E5E7EB] rounded-lg bg-white text-sm text-[#1A1A1A] focus:outline-none focus:ring-2 focus:ring-[#B91C1C] cursor-pointer"
           >
             <option value="">All Sources</option>
             <option value="Website">Website</option>
@@ -275,62 +275,100 @@ export default function OrdersPage() {
         </span>
       </div>
 
-      {/* Data Table */}
-      <div className="bg-white border border-[#E5E7EB] rounded-xl overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+      {/* Data Table / Cards */}
+      <div className="bg-transparent sm:bg-white admin-dark:sm:bg-black sm:border border-[#E5E7EB] admin-dark:border-[#2E2E2E] sm:rounded-xl sm:shadow-sm">
+        
+        {/* Mobile Cards View */}
+        <div className="sm:hidden space-y-4">
+          {filteredOrders.length > 0 ? (
+            filteredOrders.map((order) => (
+              <div key={order.id} className="bg-white admin-dark:bg-[#000000] border border-[#E5E7EB] admin-dark:border-[#2E2E2E] rounded-xl p-4 shadow-sm flex flex-col gap-3 hover:bg-[#F9FAFB] admin-dark:hover:bg-[#111111] transition-colors">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <span className="font-mono text-xs text-[#6B7280]">{order.id}</span>
+                    <p className="font-semibold text-[#111827] admin-dark:text-white mt-0.5">{order.customer}</p>
+                    <p className="text-xs text-[#9CA3AF] mt-0.5">{order.phone}</p>
+                  </div>
+                  <StatusBadge status={order.status} />
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-sm border-y border-[#E5E7EB] admin-dark:border-[#2E2E2E] py-3">
+                  <div>
+                    <p className="text-xs text-[#6B7280] mb-1">Type</p>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold ${ORDER_TYPE_STYLES[order.orderType]}`}>{order.orderType}</span>
+                  </div>
+                  <div>
+                    <p className="text-xs text-[#6B7280] mb-1">Source</p>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold ${SOURCE_STYLES[order.source]}`}>{order.source}</span>
+                  </div>
+                </div>
+                <div className="flex justify-between items-center pt-1">
+                  <span className="font-mono font-bold text-[#B91C1C] admin-dark:text-[#EF4444]">{order.total.toLocaleString('ar-DZ')} DA</span>
+                  <button onClick={() => setSelectedOrder(order)} className="admin-action-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#E5E7EB] text-xs font-semibold text-[#374151] hover:bg-[#F3F4F6] transition-all">
+                    <Eye className="h-3.5 w-3.5" /> Details
+                  </button>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="text-center py-10 bg-white admin-dark:bg-[#1A1A1A] rounded-xl border border-[#E5E7EB] admin-dark:border-[#2E2E2E] text-[#9CA3AF]">
+              <p className="text-base font-medium">No orders found</p>
+            </div>
+          )}
+        </div>
+
+        {/* Desktop Table View */}
+        <div className="hidden sm:block overflow-x-auto overflow-y-visible rounded-xl">
+          <table className="w-full text-sm min-w-max whitespace-nowrap">
             <thead>
-              <tr className="border-b border-[#E5E7EB] bg-[#F9FAFB]">
-                <th className="text-left px-5 py-3.5 text-xs font-semibold uppercase tracking-wider text-[#6B7280]">Order</th>
-                <th className="text-left px-5 py-3.5 text-xs font-semibold uppercase tracking-wider text-[#6B7280]">Customer</th>
-                <th className="text-left px-5 py-3.5 text-xs font-semibold uppercase tracking-wider text-[#6B7280]">Order Type</th>
-                <th className="text-left px-5 py-3.5 text-xs font-semibold uppercase tracking-wider text-[#6B7280]">Source</th>
-                <th className="text-left px-5 py-3.5 text-xs font-semibold uppercase tracking-wider text-[#6B7280]">Status</th>
-                <th className="text-left px-5 py-3.5 text-xs font-semibold uppercase tracking-wider text-[#6B7280]">Total</th>
-                <th className="text-right px-5 py-3.5 text-xs font-semibold uppercase tracking-wider text-[#6B7280]">Actions</th>
+              <tr className="border-b border-[#E5E7EB] admin-dark:border-[#2E2E2E] bg-[#F9FAFB] admin-dark:bg-black">
+                <th className="sticky left-0 z-20 bg-[#F9FAFB] admin-dark:bg-black text-left px-3 py-2.5 text-xs font-semibold uppercase tracking-wider text-[#6B7280] admin-dark:text-white shadow-[1px_0_0_#E5E7EB] admin-dark:shadow-[1px_0_0_#2E2E2E]">Order & Customer</th>
+                <th className="text-left px-3 py-2.5 text-xs font-semibold uppercase tracking-wider text-[#6B7280] admin-dark:text-white">Order Type</th>
+                <th className="text-left px-3 py-2.5 text-xs font-semibold uppercase tracking-wider text-[#6B7280] admin-dark:text-white">Source</th>
+                <th className="text-left px-3 py-2.5 text-xs font-semibold uppercase tracking-wider text-[#6B7280] admin-dark:text-white">Status</th>
+                <th className="text-left px-3 py-2.5 text-xs font-semibold uppercase tracking-wider text-[#6B7280] admin-dark:text-white">Total</th>
+                <th className="text-right px-3 py-2.5 text-xs font-semibold uppercase tracking-wider text-[#6B7280] admin-dark:text-white">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#F3F4F6]">
+            <tbody className="divide-y divide-[#E5E7EB] admin-dark:divide-[#2E2E2E]">
               {filteredOrders.length > 0 ? (
                 filteredOrders.map((order) => (
-                  <tr key={order.id} className="hover:bg-[#FAFAFA] transition-colors">
-                    <td className="px-5 py-4">
-                      <span className="font-mono text-xs text-[#6B7280]">{order.id}</span>
+                  <tr key={order.id} className="hover:bg-[#F3F4F6] admin-dark:hover:bg-[#111111] transition-colors group admin-dark:bg-black">
+                    <td className="sticky left-0 z-10 bg-white group-hover:bg-[#F3F4F6] admin-dark:bg-black admin-dark:group-hover:bg-[#111111] px-3 py-2 shadow-[1px_0_0_#E5E7EB] admin-dark:shadow-[1px_0_0_#2E2E2E]">
+                      <div className="flex flex-col">
+                        <span className="font-mono text-xs text-[#6B7280]">{order.id}</span>
+                        <p className="font-semibold text-[#111827] admin-dark:text-white mt-0.5">{order.customer}</p>
+                      </div>
                     </td>
-                    <td className="px-5 py-4">
-                      <p className="font-semibold text-[#111827]">{order.customer}</p>
-                      <p className="text-xs text-[#9CA3AF] mt-0.5">{order.phone}</p>
-                    </td>
-                    <td className="px-5 py-4">
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${ORDER_TYPE_STYLES[order.orderType]}`}>
+                    <td className="px-3 py-2">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold ${ORDER_TYPE_STYLES[order.orderType]}`}>
                         {order.orderType}
                       </span>
                     </td>
-                    <td className="px-5 py-4">
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${SOURCE_STYLES[order.source]}`}>
+                    <td className="px-3 py-2">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold ${SOURCE_STYLES[order.source]}`}>
                         {order.source}
                       </span>
                     </td>
-                    <td className="px-5 py-4">
+                    <td className="px-3 py-2">
                       <StatusBadge status={order.status} />
                     </td>
-                    <td className="px-5 py-4 font-mono font-bold text-[#B91C1C]">
+                    <td className="px-3 py-2 font-mono font-bold text-[#B91C1C] admin-dark:text-[#EF4444]">
                       {order.total.toLocaleString('ar-DZ')} DA
                     </td>
-                    <td className="px-5 py-4 text-right">
+                    <td className="px-3 py-2 text-right">
                       <button
                         onClick={() => setSelectedOrder(order)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#E5E7EB] text-xs font-semibold text-[#374151] hover:bg-[#F3F4F6] hover:border-[#D1D5DB] transition-all"
+                        className="admin-action-btn inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded border border-[#E5E7EB] text-[11px] font-bold text-[#374151] hover:bg-[#E5E7EB] transition-all"
                       >
-                        <Eye className="h-3.5 w-3.5" />
-                        View Details
+                        <Eye className="h-3 w-3" />
+                        Details
                       </button>
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={7} className="text-center py-14 text-[#9CA3AF]">
+                  <td colSpan={6} className="text-center py-14 text-[#9CA3AF]">
                     <p className="text-base font-medium">No orders found</p>
                     <p className="text-sm mt-1">Try adjusting your filters</p>
                   </td>

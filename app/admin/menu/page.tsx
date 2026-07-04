@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Trash2, Edit3, Plus, X } from 'lucide-react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { categories, menuItems } from '@/lib/mock-data';
 
 export default function MenuPage() {
@@ -103,9 +104,9 @@ export default function MenuPage() {
                             <span className="text-xs text-[#6B7280]">Available</span>
                           </div>
                           <div className="flex gap-2">
-                            <button className="p-1.5 bg-blue-50 text-blue-600 rounded hover:bg-blue-100">
+                            <Link href={`/admin/menu/edit/${product.id}`} className="p-1.5 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 flex items-center justify-center">
                               <Edit3 className="h-4 w-4" />
-                            </button>
+                            </Link>
                             <button
                               onClick={() => handleDeleteProduct(product.id)}
                               className="p-1.5 bg-red-50 text-red-600 rounded hover:bg-red-100"
@@ -161,9 +162,9 @@ export default function MenuPage() {
                             </div>
                           </td>
                           <td className="py-4 px-4 text-right space-x-2">
-                            <button className="inline-block p-2 hover:bg-blue-100 rounded-lg text-blue-600">
+                            <Link href={`/admin/menu/edit/${product.id}`} className="inline-block p-2 hover:bg-blue-100 rounded-lg text-blue-600">
                               <Edit3 className="h-4 w-4" />
-                            </button>
+                            </Link>
                             <button
                               onClick={() => handleDeleteProduct(product.id)}
                               className="inline-block p-2 hover:bg-red-100 rounded-lg text-red-600"

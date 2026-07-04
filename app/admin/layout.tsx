@@ -65,7 +65,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className={darkMode ? 'admin-dark' : ''}>
+    <div className={`admin-panel ${darkMode ? 'admin-dark' : ''}`}>
       <div className="flex h-screen bg-[#FAFAFA] text-[#1A1A1A] transition-colors duration-300 overflow-hidden">
         {/* Mobile Sidebar Overlay */}
         {sidebarOpen && (
@@ -107,7 +107,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                     className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 ${
                       isActive
                         ? 'bg-[#B91C1C] text-white shadow-md shadow-[#B91C1C]/20'
-                        : 'text-[#6B7280] hover:bg-gray-100 hover:translate-x-0.5'
+                        : 'text-[#6B7280] admin-dark:text-white hover:bg-gray-100 admin-dark:hover:bg-[#1A1A1A] admin-dark:hover:text-white hover:translate-x-0.5'
                     }`}
                   >
                     <Icon className="h-[18px] w-[18px] flex-shrink-0" />
@@ -125,6 +125,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
               className="w-full flex items-center gap-3 px-3 py-2 text-[#6B7280] hover:bg-gray-100 rounded-lg transition-colors"
             >
               {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              {sidebarOpen && <span className="font-semibold text-sm">Collapse</span>}
             </button>
           </div>
         </aside>

@@ -11,31 +11,20 @@ import { useTheme } from '@/lib/theme-context';
 import { BrandLogo } from '@/components/brand-logo';
 import { formatDA } from '@/lib/format';
 
-const FEATURED_IDS = ['bbq-bacon-burger', 'pepperoni', 'quattro-formaggi', 'chicken-wings'];
+
 
 export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [selectedSizes, setSelectedSizes] = useState<Record<string, string>>({});
-  const [slide, setSlide] = useState(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMenuDropdownOpen, setIsMenuDropdownOpen] = useState(false);
   const [isAIListening, setIsAIListening] = useState(false);
-  const [showAITooltip, setShowAITooltip] = useState(false);
   const { getItemCount, addItem } = useCart();
   const { theme, toggleTheme } = useTheme();
 
   const itemCount = getItemCount();
-  const featured = useMemo(
-    () => FEATURED_IDS.map((id) => menuItems.find((m) => m.id === id)).filter(Boolean) as typeof menuItems,
-    []
-  );
-
-  useEffect(() => {
-    const t = setInterval(() => setSlide((s) => (s + 1) % featured.length), 5000);
-    return () => clearInterval(t);
-  }, [featured.length]);
 
   const displayedItems = useMemo(() => {
     let filtered = menuItems;
@@ -79,81 +68,55 @@ export default function Home() {
     });
   };
 
-  const activeFeatured = featured[slide];
-
   return (
     <div className="min-h-screen bg-[#161210] flex w-full max-w-full box-border overflow-x-hidden">
-      {/* Left Sidebar — logo + categories, no top header bar */}
-      <aside className="hidden sm:flex w-60 flex-col border-r border-[#3A2C22] bg-[#1B1410] sticky top-0 h-screen">
-        <div className="flex items-center gap-3 px-5 py-6 border-b border-[#3A2C22]">
-          <BrandLogo size="md" />
-          <div>
-            <h1 className="font-display text-xl tracking-wide text-[#F3EDE3] leading-none">
-              {settings.restaurantName}
-            </h1>
-            <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-[#A89A8C]">Flame-fast · Algiers</p>
-          </div>
-        </div>
+      {/* Left Sidebar removed in favor of universal header and drawer */}
 
-        <div className="flex-1 overflow-y-auto p-4">
-          <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-[#A89A8C] mb-3 px-2">
-            Menu sections
-          </p>
-          <div className="space-y-2">
-            {categories.map((category) => (
-              <button
-                key={category.id}
-                onClick={() => setSelectedCategory(category.id)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-r-full rounded-l-md border-l-4 transition-colors ${
-                  selectedCategory === category.id
-                    ? 'border-l-[#E8A33D] bg-[#B91C1C] text-[#F3EDE3]'
-                    : 'border-l-transparent text-[#A89A8C] hover:bg-[#241B16] hover:border-l-[#3A2C22]'
-                }`}
-              >
-                <div className="relative w-10 h-10 rounded-lg bg-[#241B16] flex-shrink-0 overflow-hidden">
-                  <Image src={category.imageUrl} alt={category.name} fill className="object-cover" />
-                </div>
-                <span className="text-sm font-semibold text-left">{category.name}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Theme toggle — tucked away from primary interactions */}
-        <div className="border-t border-[#3A2C22] p-4">
-          <button
-            onClick={toggleTheme}
-            className="w-full flex items-center justify-center gap-2 py-2 rounded-lg text-[#6B6358] hover:text-[#A89A8C] hover:bg-[#241B16] transition-colors text-xs font-mono uppercase tracking-wider"
-          >
-            {theme === 'dark' ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
-            {theme === 'dark' ? 'Light mode' : 'Dark mode'}
-          </button>
-        </div>
-      </aside>
-
-      {/* Mobile-only top mini bar */}
-      <div className="sm:hidden fixed top-0 inset-x-0 z-30 flex items-center justify-between px-4 py-3 bg-[#1B1410]/95 backdrop-blur border-b border-[#3A2C22]">
+      {/* Universal Top Navigation Bar */}
+      <div className={`fixed top-0 inset-x-0 z-30 flex items-center justify-between px-4 py-3 backdrop-blur border-b transition-colors ${theme === 'dark' ? 'bg-black border-white/10 text-white' : 'bg-white border-black/10 shadow-sm text-black'}`}>
         <div className="flex items-center gap-2">
           <BrandLogo size="sm" />
-          <span className="font-display text-lg tracking-wide text-[#F3EDE3]">{settings.restaurantName}</span>
+          <span className="font-display text-lg tracking-wide hidden sm:inline">{settings.restaurantName}</span>
         </div>
-        <button 
-          onClick={() => setIsMobileMenuOpen(true)}
-          className="p-2 text-[#F3EDE3] hover:bg-[#241B16] rounded-lg transition-colors"
-        >
-          <Menu className="h-6 w-6" />
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsCartOpen(true)}
+            className="relative p-2 rounded-lg transition-colors hover:bg-black/10 dark:hover:bg-white/10"
+            aria-label="Cart"
+          >
+            <ShoppingCart className="h-6 w-6" />
+            {itemCount > 0 && (
+              <span className={`absolute top-0 right-0 inline-flex h-4 min-w-4 px-1 items-center justify-center rounded-full font-mono text-[10px] font-bold translate-x-1 -translate-y-1 shadow-md ${theme === 'dark' ? 'bg-white text-black' : 'bg-black text-white'}`}>
+                {itemCount}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={toggleTheme}
+            className="p-2 rounded-lg transition-colors hover:bg-black/10 dark:hover:bg-white/10"
+            aria-label="Toggle Theme"
+          >
+            {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+          </button>
+          <button 
+            onClick={() => setIsMobileMenuOpen(true)}
+            className="p-2 rounded-lg transition-colors hover:bg-black/10 dark:hover:bg-white/10"
+            aria-label="Menu"
+          >
+            <Menu className="h-6 w-6" />
+          </button>
+        </div>
       </div>
 
-      {/* Mobile Off-canvas Drawer */}
+      {/* Universal Off-canvas Drawer */}
       {isMobileMenuOpen && (
-        <div className="fixed inset-0 z-50 sm:hidden flex">
+        <div className="fixed inset-0 z-50 flex">
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)} />
-          <aside className="relative w-72 bg-[#1B1410] h-full flex flex-col shadow-2xl animate-in slide-in-from-left duration-300">
+          <aside className="relative w-80 max-w-[85vw] bg-[#1B1410] h-full flex flex-col shadow-2xl animate-in slide-in-from-left duration-300">
             <div className="flex items-center justify-between p-4 border-b border-[#3A2C22]">
               <div className="flex items-center gap-2">
                 <BrandLogo size="sm" />
-                <span className="font-display text-lg tracking-wide text-[#F3EDE3]">Menu</span>
+                <span className="font-display text-lg tracking-wide text-[#F3EDE3]">Action Hub</span>
               </div>
               <button 
                 onClick={() => setIsMobileMenuOpen(false)}
@@ -162,17 +125,20 @@ export default function Home() {
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-2">
-              <button
-                onClick={() => {
-                  setIsMobileMenuOpen(false);
-                  setSelectedCategory(null);
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
+
+            <div className="flex-1 overflow-y-auto flex flex-col">
+              {/* AI Voice Order Card removed from here */}
+              {/* Navigation */}
+              <div className="p-4 flex flex-col gap-2">
+                <button
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    setSelectedCategory(null);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
                 className="w-full text-left px-4 py-3 text-[#F3EDE3] font-bold text-lg rounded-lg hover:bg-[#241B16] transition-colors flex items-center justify-between"
               >
                 <span>Home</span>
-                <span className="text-[#A89A8C] text-sm font-normal">الرئيسية</span>
               </button>
               
               <div className="w-full">
@@ -184,7 +150,6 @@ export default function Home() {
                     <span>Menu</span>
                     <ChevronDown className={`h-4 w-4 transition-transform ${isMenuDropdownOpen ? 'rotate-180' : ''}`} />
                   </div>
-                  <span className="text-[#A89A8C] text-sm font-normal">المينيو</span>
                 </button>
                 {isMenuDropdownOpen && (
                   <div className="pl-4 pr-2 py-2 space-y-1 bg-[#161210] rounded-b-lg border border-[#3A2C22] border-t-0 mx-2 mb-2">
@@ -216,80 +181,78 @@ export default function Home() {
                 className="w-full text-left px-4 py-3 text-[#F3EDE3] font-bold text-lg rounded-lg hover:bg-[#241B16] transition-colors flex items-center justify-between"
               >
                 <span>Cart</span>
-                <span className="text-[#A89A8C] text-sm font-normal">السلة</span>
               </button>
+            </div>
             </div>
           </aside>
         </div>
       )}
 
       {/* Main content */}
-      <main className="flex-1 sm:pl-0 pt-14 sm:pt-0 overflow-x-hidden w-full max-w-full box-border">
-        {/* Hero Slider */}
-        {activeFeatured && (
-          <section className="hero-section relative overflow-hidden border-b border-[#3A2C22] bg-[#1B1410]">
-            <div className="relative h-80 sm:h-96">
-              {featured.map((item, index) => (
-                <div 
-                  key={item.id} 
-                  className={`absolute inset-0 transition-opacity duration-[800ms] ease-in-out ${index === slide ? 'opacity-100 z-10 pointer-events-auto' : 'opacity-0 z-0 pointer-events-none'}`}
-                >
-                  <Image
-                    src={item.imageUrl}
-                    alt={item.name}
-                    fill
-                    className="object-cover object-center"
-                    priority={index === 0}
-                    sizes="100vw"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#161210]/80 via-transparent to-transparent" />
-                  <div className="absolute inset-0 flex flex-col items-start justify-end px-8 py-8 sm:px-14 sm:py-10">
-                    <p className="hero-label font-mono text-[11px] uppercase tracking-[0.3em] text-[#E8A33D] mb-2">
-                      Signature Collection
-                    </p>
-                    <h1 className="hero-title font-display text-4xl sm:text-6xl uppercase tracking-wide text-[#F3EDE3] leading-tight max-w-lg mb-2">
-                      DZ Burger Station
-                    </h1>
-                    <p className="text-base sm:text-lg text-[#F3EDE3]/90 mb-6 max-w-md">
-                      Experience the ultimate taste with our handcrafted <span className="text-[#E8A33D] font-bold">{item.name}</span>, made fresh to order.
-                    </p>
-                    <button 
-                      onClick={() => document.getElementById('menu-section')?.scrollIntoView({ behavior: 'smooth' })}
-                      className="hero-btn inline-flex items-center gap-2.5 bg-[#B91C1C] hover:bg-[#991B1B] text-white font-mono text-sm tracking-widest uppercase px-8 py-3.5 border border-[#E8A33D]/40 hover:border-[#E8A33D] transition-all rounded-full shadow-md cursor-pointer"
-                    >
-                      Order Now <Flame className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-              ))}
+      <main className="flex-1 pt-[68px] overflow-x-hidden w-full max-w-full box-border">
+        <section className="hero-section relative w-full h-[85vh] sm:h-[70vh] lg:h-[80vh] bg-[#161210] bg-[url('/images/hero_banner.png')] bg-cover bg-right bg-no-repeat border-b border-[#3A2C22] flex items-center justify-start overflow-hidden">
+          {/* Subtle dark gradient overlay for text readability */}
+          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent pointer-events-none" />
+          
+          <div className="w-full px-6 sm:px-12 lg:px-20 max-w-7xl mx-auto box-border relative z-10 flex flex-col items-start justify-center text-left">
+            <p className="font-mono text-xs sm:text-base uppercase tracking-widest text-[#FDE047] font-bold mb-4 drop-shadow-md">
+              Signature Collection
+            </p>
+            <h1 className="font-display text-4xl sm:text-5xl lg:text-7xl uppercase tracking-wide text-white leading-[1.1] mb-6 font-black drop-shadow-[0_4px_4px_rgba(0,0,0,0.8)]">
+              Order Fast Food<br />in Minutes
+            </h1>
+            <p className="text-base sm:text-lg text-white mb-8 max-w-sm sm:max-w-md font-medium drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] leading-snug">
+              Experience the ultimate taste with our handcrafted special, made fresh to order.
+            </p>
+            <button 
+              onClick={() => document.getElementById('menu-section')?.scrollIntoView({ behavior: 'smooth' })}
+              className="bg-[#FDE047] hover:bg-[#FACC15] text-[#B91C1C] font-black uppercase text-sm sm:text-base tracking-widest px-8 py-3.5 sm:py-4 rounded-full shadow-xl transition-colors shrink-0"
+            >
+              Order Now
+            </button>
+          </div>
+        </section>
 
-              {/* Slider controls */}
-              <button
-                onClick={() => setSlide((s) => (s - 1 + featured.length) % featured.length)}
-                className="hero-arrow absolute left-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/30 hover:bg-black/50 text-white z-20"
-              >
-                <ChevronLeft className="h-5 w-5" />
-              </button>
-              <button
-                onClick={() => setSlide((s) => (s + 1) % featured.length)}
-                className="hero-arrow absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/30 hover:bg-black/50 text-white z-20"
-              >
-                <ChevronRight className="h-5 w-5" />
-              </button>
-              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-20">
-                {featured.map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setSlide(i)}
-                    className={`h-1.5 rounded-full transition-all duration-[800ms] ease-in-out ${
-                      i === slide ? 'w-6 bg-[#E8A33D]' : 'w-1.5 bg-white/40'
-                    }`}
-                  />
-                ))}
+        {/* Integrated AI Voice Section */}
+        <section className="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-5xl mx-auto box-border">
+          <div className={`relative overflow-hidden rounded-[32px] p-8 sm:p-12 flex flex-col items-center justify-center text-center transition-colors duration-300 border-2 ${
+            isAIListening 
+              ? 'bg-violet-900/40 border-violet-500/50 shadow-[0_0_50px_rgba(124,58,237,0.3)]' 
+              : 'bg-[#1F1812] border-[#3A2C22] shadow-xl'
+          }`}>
+            <div className="absolute inset-0 bg-[url('/noise.png')] opacity-5 mix-blend-overlay pointer-events-none" />
+            <div className={`absolute top-0 left-1/2 -translate-x-1/2 w-[200%] h-full bg-gradient-to-b from-violet-600/10 to-transparent pointer-events-none transition-opacity duration-300 ${isAIListening ? 'opacity-100' : 'opacity-0'}`} />
+            
+            <button
+              onClick={() => setIsAIListening((v) => !v)}
+              className="relative z-10 flex flex-col items-center justify-center gap-4"
+            >
+              <div className={`w-24 h-24 sm:w-32 sm:h-32 rounded-full flex items-center justify-center relative transition-colors duration-300 ${
+                isAIListening ? 'bg-violet-600' : 'bg-black border-2 border-violet-600 shadow-[0_0_15px_rgba(124,58,237,0.5)]'
+              }`}>
+                {isAIListening && (
+                  <>
+                    <span className="absolute inset-0 rounded-full bg-violet-500 animate-ping opacity-60" />
+                    <span className="absolute -inset-4 rounded-full border border-violet-400/50 animate-pulse" />
+                    <span className="absolute -inset-8 rounded-full border border-violet-400/20 animate-pulse" style={{ animationDelay: '200ms' }} />
+                  </>
+                )}
+                {isAIListening ? <MicOff className="h-10 w-10 sm:h-12 sm:w-12 text-white relative z-10 animate-pulse" /> : <Mic className="h-10 w-10 sm:h-12 sm:w-12 text-white relative z-10" />}
               </div>
+            </button>
+            
+            <div className="mt-8 relative z-10 max-w-lg">
+              <h2 className="font-display text-3xl sm:text-4xl uppercase tracking-wide text-[#F3EDE3] mb-3">
+                {isAIListening ? 'Listening...' : 'Order with Voice AI'}
+              </h2>
+              <p className="text-[#A89A8C] text-base sm:text-lg">
+                {isAIListening 
+                  ? 'Speak clearly into your microphone. Tell us what you are craving.' 
+                  : 'Tap the microphone and tell our smart assistant what you want to order. Hands-free and fast.'}
+              </p>
             </div>
-          </section>
-        )}
+          </div>
+        </section>
 
         <div id="menu-section" className="px-4 py-8 sm:px-6 lg:px-8 w-full box-border">
           {selectedCategory === null ? (
@@ -448,59 +411,6 @@ export default function Home() {
           )}
         </div>
       </main>
-
-      {/* AI Voice Ordering FAB */}
-      <div className="fixed bottom-24 right-6 z-40 flex flex-col items-end gap-2">
-        {/* Tooltip */}
-        {showAITooltip && !isAIListening && (
-          <div className="bg-[#1B1410] text-[#F3EDE3] text-xs font-semibold px-3 py-1.5 rounded-full shadow-lg whitespace-nowrap mr-1 animate-in fade-in slide-in-from-right-2 duration-200">
-            🎙️ Order by voice
-          </div>
-        )}
-        {/* Listening label */}
-        {isAIListening && (
-          <div className="bg-violet-600 text-white text-xs font-semibold px-3 py-1.5 rounded-full shadow-lg whitespace-nowrap mr-1 animate-in fade-in duration-200">
-            Listening…
-          </div>
-        )}
-        <button
-          id="ai-voice-fab"
-          onClick={() => setIsAIListening((v) => !v)}
-          onMouseEnter={() => setShowAITooltip(true)}
-          onMouseLeave={() => setShowAITooltip(false)}
-          aria-label="AI voice ordering"
-          className={`relative w-14 h-14 rounded-full flex items-center justify-center shadow-xl transition-all duration-300 hover:scale-110 active:scale-95 ${
-            isAIListening
-              ? 'bg-violet-600 shadow-violet-500/50'
-              : 'bg-gradient-to-br from-violet-500 to-purple-700 shadow-purple-900/60'
-          }`}
-        >
-          {/* Pulse rings when listening */}
-          {isAIListening && (
-            <>
-              <span className="absolute inset-0 rounded-full bg-violet-500 animate-ping opacity-40" />
-              <span className="absolute -inset-2 rounded-full border-2 border-violet-400/40 animate-pulse" />
-            </>
-          )}
-          {isAIListening
-            ? <MicOff className="h-6 w-6 text-white relative z-10" />
-            : <Mic className="h-6 w-6 text-white relative z-10" />
-          }
-        </button>
-      </div>
-
-      {/* Floating Cart Button */}
-      <button
-        onClick={() => setIsCartOpen(true)}
-        className="fixed bottom-6 right-6 z-40 flex items-center gap-2 rounded-full bg-[#B91C1C] hover:bg-[#991B1B] text-[#F3EDE3] px-5 py-3.5 shadow-xl shadow-black/40 transition-all hover:scale-105"
-      >
-        <ShoppingCart className="h-5 w-5" />
-        {itemCount > 0 && (
-          <span className="inline-flex h-5 min-w-5 px-1 items-center justify-center rounded-full bg-[#E8A33D] font-mono text-[11px] font-bold text-[#1B1410]">
-            {itemCount}
-          </span>
-        )}
-      </button>
 
       <CartSidebar isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
     </div>

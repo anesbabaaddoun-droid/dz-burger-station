@@ -3,6 +3,7 @@
 @import 'shadcn/tailwind.css';
 
 @custom-variant dark (&:is(.dark *));
+@custom-variant admin-dark (&:is(.admin-dark *));
 
 @theme inline {
   --font-heading: var(--font-display);
@@ -169,32 +170,58 @@
   }
 }
 
-/* ===== Admin Dark Mode Override ===== */
-/* Toggled by adding `.admin-dark` on the admin shell wrapper. Recolors the
-   compiled utility classes already used across the Admin pages so dark mode
-   works site-wide without rewriting every component. */
-.admin-dark {
-  background-color: #0F0F0F;
-  color: #F5F5F5;
+/* ===== Admin Theme Decoupling & High Contrast Override ===== */
+/* Toggled by adding `.admin-dark` on the admin shell wrapper. */
+.admin-panel {
+  color-scheme: light;
 }
-.admin-dark .bg-white { background-color: #1A1A1A !important; }
-.admin-dark .bg-\[\#FAFAFA\] { background-color: #0F0F0F !important; }
-.admin-dark .bg-gray-50 { background-color: #1A1A1A !important; }
-.admin-dark .bg-gray-100 { background-color: #242424 !important; }
-.admin-dark .bg-gray-200 { background-color: #2E2E2E !important; }
-.admin-dark .bg-gray-300 { background-color: #3A3A3A !important; }
-.admin-dark .text-\[\#1A1A1A\] { color: #F5F5F5 !important; }
-.admin-dark .text-\[\#6B7280\] { color: #9CA3AF !important; }
+
+.admin-dark {
+  background-color: #000000 !important;
+  color: #FFFFFF !important;
+  color-scheme: dark;
+}
+.admin-dark .bg-white { background-color: #000000 !important; color: #FFFFFF !important; }
+.admin-dark .sm\:bg-white { background-color: #000000 !important; color: #FFFFFF !important; }
+.admin-dark .bg-\[\#FAFAFA\] { background-color: #000000 !important; color: #FFFFFF !important; }
+.admin-dark .bg-gray-50, .admin-dark .hover\:bg-gray-50:hover { background-color: #242424 !important; }
+.admin-dark .bg-gray-100, .admin-dark .hover\:bg-gray-100:hover { background-color: #2E2E2E !important; }
+.admin-dark .bg-gray-200, .admin-dark .hover\:bg-gray-200:hover { background-color: #3A3A3A !important; }
+.admin-dark .bg-gray-300, .admin-dark .hover\:bg-gray-300:hover { background-color: #4A4A4A !important; }
+
+/* Force High Contrast White Text in Dark Mode for all typical text colors */
+.admin-dark .text-\[\#1A1A1A\],
+.admin-dark .text-\[\#111827\],
+.admin-dark .text-\[\#374151\],
+.admin-dark .text-\[\#4B5563\],
+.admin-dark .text-\[\#6B7280\],
+.admin-dark .text-gray-500,
+.admin-dark .text-gray-600,
+.admin-dark .text-gray-700,
+.admin-dark .text-gray-800,
+.admin-dark .text-gray-900 {
+  color: #FFFFFF !important;
+}
+
+.admin-dark .admin-action-btn {
+  border-color: #FFFFFF !important;
+  color: #FFFFFF !important;
+}
+.admin-dark .admin-action-btn:hover {
+  background-color: #FFFFFF !important;
+  color: #000000 !important;
+}
+
 .admin-dark .border-\[\#E5E7EB\] { border-color: #2E2E2E !important; }
 .admin-dark .border-gray-200 { border-color: #2E2E2E !important; }
 .admin-dark input,
 .admin-dark select,
 .admin-dark textarea {
-  background-color: #1A1A1A;
-  color: #F5F5F5;
-  border-color: #2E2E2E;
+  background-color: #000000 !important;
+  color: #FFFFFF !important;
+  border-color: #000000 !important;
 }
-.admin-dark ::placeholder { color: #6B6B6B; }
+.admin-dark ::placeholder { color: #A1A1AA !important; }
 
 /* ===== Customer Light Theme Override ===== */
 /* Default customer theme is dark (Smokehouse Ticket identity). Toggling

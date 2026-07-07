@@ -1,19 +1,77 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Trash2, Edit3, Plus, X } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { categories, menuItems } from '@/lib/mock-data';
+import { useFirestoreCollection } from '@/hooks/useFirestoreCollection';
+import { useApiMutation } from '@/hooks/useApiMutation';
+
+interface Category {
+  id: string;
+  name: string;
+  imageUrl: string;
+  displayOrder: number;
+}
+
+interface MenuItemData {
+  id: string;
+  categoryId: string;
+  name: string;
+  description: string;
+  imageUrl: string;
+  availability: string;
+  basePrice: number;
+  ingredients: string[];
+}
+
+interface NewProductPayload {
+  name: string;
+  description: string;
+  categoryId: string;
+  basePrice: number;
+  ingredients: string[];
+}
 
 export default function MenuPage() {
-  const [selectedCategory, setSelectedCategory] = useState(categories[0]?.id);
+  const { data: categoriesData, isLoading: categoriesLoading } = useFirestoreCollection('categories', 'displayOrder');
+  const { data: productsData, isLoading: productsLoading, refetch: refetchProducts } = useFirestoreCollection('menuItems');
+
+  const categories = categoriesData as unknown as Category[];
+  const products = productsData as unknown as MenuItemData[];
+
+  const [selectedCategory, setSelectedCategory] = useState<string | undefined>(undefined);
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [ingredients, setIngredients] = useState<string[]>([]);
   const [ingredientInput, setIngredientInput] = useState('');
-  const [products, setProducts] = useState(menuItems);
 
-  const categoryProducts = products.filter((p) => p.categoryId === selectedCategory);
+  // Add Product form fields
+  const [newName, setNewName] = useState('');
+  const [newDescription, setNewDescription] = useState('');
+  const [newCategory, setNewCategory] = useState('');
+  const [newPrice, setNewPrice] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const { mutate: mutatePatch } = useApiMutation<Partial<MenuItemData>>('', 'PATCH');
+  const { mutate: mutateDelete } = useApiMutation<undefined>('', 'DELETE');
+  const { mutate: mutateCreate } = useApiMutation<NewProductPayload>('/api/menu', 'POST');
+
+  const activeCategory = selectedCategory ?? categories[0]?.id;
+
+  const categoryProducts = useMemo(
+    () => products.filter((p) => p.categoryId === activeCategory),
+    [products, activeCategory]
+  );
+
+  const resetAddForm = () => {
+    setShowAddProduct(false);
+    setIngredients([]);
+    setIngredientInput('');
+    setNewName('');
+    setNewDescription('');
+    setNewCategory('');
+    setNewPrice('');
+  };
 
   const handleAddIngredient = () => {
     if (ingredientInput.trim()) {
@@ -26,11 +84,46 @@ export default function MenuPage() {
     setIngredients(ingredients.filter((_, i) => i !== idx));
   };
 
-  const handleDeleteProduct = (id: string) => {
+  const handleDeleteProduct = useCallback(async (id: string) => {
     if (confirm('Are you sure you want to delete this product?')) {
-      setProducts(products.filter((p) => p.id !== id));
+      const success = await mutateDelete(undefined, `/api/menu/${id}`);
+      if (success) refetchProducts();
     }
-  };
+  }, [mutateDelete, refetchProducts]);
+
+  const handleToggleAvailability = useCallback(async (id: string, currentlyAvailable: boolean) => {
+    const newAvailability = currentlyAvailable ? 'unavailable' : 'available';
+    const success = await mutatePatch({ availability: newAvailability }, `/api/menu/${id}`);
+    if (success) refetchProducts();
+  }, [mutatePatch, refetchProducts]);
+
+  const handleSaveNewProduct = useCallback(async () => {
+    if (!newName.trim() || !newCategory || !newPrice || ingredients.length === 0) {
+      alert('Please fill in all required fields (name, category, price, ingredients).');
+      return;
+    }
+
+    setIsSubmitting(true);
+    const success = await mutateCreate({
+      name: newName.trim(),
+      description: newDescription.trim(),
+      categoryId: newCategory,
+      basePrice: Number(newPrice),
+      ingredients,
+    });
+    setIsSubmitting(false);
+
+    if (success) {
+      refetchProducts();
+      resetAddForm();
+    } else {
+      alert('Failed to save product. Please try again.');
+    }
+  }, [newName, newDescription, newCategory, newPrice, ingredients, mutateCreate, refetchProducts]);
+
+  if (categoriesLoading || productsLoading) {
+    return <div className="py-24 text-center text-[#6B7280]">Loading menu…</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -41,7 +134,10 @@ export default function MenuPage() {
           <p className="text-[#6B7280] mt-1">Manage your restaurant menu items</p>
         </div>
         <button
-          onClick={() => setShowAddProduct(true)}
+          onClick={() => {
+            setNewCategory(activeCategory ?? categories[0]?.id ?? '');
+            setShowAddProduct(true);
+          }}
           className="flex items-center gap-2 bg-[#B91C1C] hover:bg-[#991B1B] text-white font-bold px-4 py-2 rounded-full transition-colors"
         >
           <Plus className="h-5 w-5" /> Add Product
@@ -58,11 +154,10 @@ export default function MenuPage() {
                 <button
                   key={cat.id}
                   onClick={() => setSelectedCategory(cat.id)}
-                  className={`w-full text-left px-4 py-3 rounded-lg transition-colors font-semibold text-sm ${
-                    selectedCategory === cat.id
+                  className={`w-full text-left px-4 py-3 rounded-lg transition-colors font-semibold text-sm ${activeCategory === cat.id
                       ? 'bg-[#B91C1C] text-white'
                       : 'bg-gray-100 text-[#1A1A1A] hover:bg-gray-200'
-                  }`}
+                    }`}
                 >
                   {cat.name}
                 </button>
@@ -76,7 +171,7 @@ export default function MenuPage() {
           <div className="bg-white rounded-xl border border-[#E5E7EB] overflow-hidden">
             <div className="p-6 border-b border-[#E5E7EB]">
               <h3 className="font-bold text-[#1A1A1A]">
-                {categories.find((c) => c.id === selectedCategory)?.name} Products
+                {categories.find((c) => c.id === activeCategory)?.name} Products
               </h3>
             </div>
 
@@ -98,7 +193,8 @@ export default function MenuPage() {
                           <div className="flex items-center gap-2">
                             <input
                               type="checkbox"
-                              defaultChecked={product.availability === 'available'}
+                              checked={product.availability === 'available'}
+                              onChange={() => handleToggleAvailability(product.id, product.availability === 'available')}
                               className="h-4 w-4 rounded accent-[#22C55E]"
                             />
                             <span className="text-xs text-[#6B7280]">Available</span>
@@ -156,7 +252,8 @@ export default function MenuPage() {
                             <div className="flex items-center justify-center">
                               <input
                                 type="checkbox"
-                                defaultChecked={product.availability === 'available'}
+                                checked={product.availability === 'available'}
+                                onChange={() => handleToggleAvailability(product.id, product.availability === 'available')}
                                 className="h-5 w-5 rounded accent-[#22C55E]"
                               />
                             </div>
@@ -187,49 +284,50 @@ export default function MenuPage() {
         </div>
       </div>
 
-      {/* Add Product Modal */}
+      {/* Add Product Modal — now fully functional */}
       {showAddProduct && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-end sm:justify-center z-[100] p-0 sm:p-4">
           <div className="bg-white rounded-t-2xl sm:rounded-xl w-full max-w-full sm:max-w-2xl max-h-[90vh] sm:max-h-[85vh] flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 sm:slide-in-from-bottom-0 sm:zoom-in-95 box-border">
             <div className="flex items-center justify-between p-4 sm:p-6 border-b border-[#E5E7EB] shrink-0 bg-white">
               <h2 className="text-xl sm:text-2xl font-bold text-[#1A1A1A]">Add New Product</h2>
               <button
-                onClick={() => {
-                  setShowAddProduct(false);
-                  setIngredients([]);
-                  setIngredientInput('');
-                }}
+                onClick={resetAddForm}
                 className="p-2 hover:bg-gray-100 rounded-lg"
               >
                 <X className="h-6 w-6" />
               </button>
             </div>
-            
+
             <div className="overflow-y-auto p-4 sm:p-6 space-y-4 flex-1 box-border w-full">
-              {/* Name */}
               <div>
                 <label className="block text-sm font-semibold text-[#1A1A1A] mb-2">Product Name</label>
                 <input
                   type="text"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
                   placeholder="Enter product name"
                   className="w-full px-4 py-2 border border-[#E5E7EB] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#B91C1C]"
                 />
               </div>
 
-              {/* Description */}
               <div>
                 <label className="block text-sm font-semibold text-[#1A1A1A] mb-2">Description</label>
                 <textarea
+                  value={newDescription}
+                  onChange={(e) => setNewDescription(e.target.value)}
                   placeholder="Enter product description"
                   rows={3}
                   className="w-full px-4 py-2 border border-[#E5E7EB] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#B91C1C]"
                 />
               </div>
 
-              {/* Category */}
               <div>
                 <label className="block text-sm font-semibold text-[#1A1A1A] mb-2">Category</label>
-                <select className="w-full px-4 py-2 border border-[#E5E7EB] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#B91C1C]">
+                <select
+                  value={newCategory}
+                  onChange={(e) => setNewCategory(e.target.value)}
+                  className="w-full px-4 py-2 border border-[#E5E7EB] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#B91C1C]"
+                >
                   {categories.map((cat) => (
                     <option key={cat.id} value={cat.id}>
                       {cat.name}
@@ -238,17 +336,17 @@ export default function MenuPage() {
                 </select>
               </div>
 
-              {/* Base Price */}
               <div>
                 <label className="block text-sm font-semibold text-[#1A1A1A] mb-2">Base Price (DA)</label>
                 <input
                   type="number"
+                  value={newPrice}
+                  onChange={(e) => setNewPrice(e.target.value)}
                   placeholder="Enter price"
                   className="w-full px-4 py-2 border border-[#E5E7EB] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#B91C1C]"
                 />
               </div>
 
-              {/* Ingredients */}
               <div>
                 <label className="block text-sm font-semibold text-[#1A1A1A] mb-2">Ingredients *</label>
                 <div className="flex gap-2 mb-2">
@@ -291,23 +389,19 @@ export default function MenuPage() {
                 </div>
               </div>
 
-              {/* Action Buttons */}
               <div className="flex gap-4 pt-4 shrink-0 bg-white border-t border-[#E5E7EB]">
                 <button
-                  onClick={() => {
-                    setShowAddProduct(false);
-                    setIngredients([]);
-                    setIngredientInput('');
-                  }}
+                  onClick={resetAddForm}
                   className="flex-1 px-4 py-3 sm:py-2 border-2 border-[#E5E7EB] text-[#1A1A1A] font-semibold rounded-full hover:bg-gray-100"
                 >
                   Cancel
                 </button>
                 <button
-                  disabled={ingredients.length === 0}
+                  onClick={handleSaveNewProduct}
+                  disabled={ingredients.length === 0 || isSubmitting}
                   className="flex-1 px-4 py-3 sm:py-2 bg-[#B91C1C] text-white font-semibold rounded-full hover:bg-[#991B1B] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Save Product
+                  {isSubmitting ? 'Saving…' : 'Save Product'}
                 </button>
               </div>
             </div>

@@ -1,34 +1,45 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Save, X, Plus } from 'lucide-react';
-import { menuItems, categories } from '@/lib/mock-data';
 import Link from 'next/link';
+import { useFirestoreDoc } from '@/hooks/useFirestoreDoc';
+import { useFirestoreCollection } from '@/hooks/useFirestoreCollection';
+import { useApiMutation } from '@/hooks/useApiMutation';
+
+interface Category {
+  id: string;
+  name: string;
+}
 
 export default function EditProductPage() {
-  const { id } = useParams();
+  const params = useParams();
+  const id = params.id as string;
   const router = useRouter();
-  
-  const [product, setProduct] = useState<typeof menuItems[0] | null>(null);
+
+  const { data: product, isLoading: productLoading } = useFirestoreDoc('menuItems', id);
+  const { data: categoriesData, isLoading: categoriesLoading } = useFirestoreCollection('categories', 'displayOrder');
+  const categories = categoriesData as unknown as Category[];
+
+  const { mutate: mutatePatch, isLoading: isSaving } = useApiMutation<Record<string, unknown>>('', 'PATCH');
+
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [basePrice, setBasePrice] = useState(0);
   const [category, setCategory] = useState('');
   const [ingredients, setIngredients] = useState<string[]>([]);
   const [ingredientInput, setIngredientInput] = useState('');
-  
+
   useEffect(() => {
-    const foundProduct = menuItems.find((p) => p.id === id);
-    if (foundProduct) {
-      setProduct(foundProduct);
-      setName(foundProduct.name);
-      setDescription(foundProduct.description);
-      setBasePrice(foundProduct.basePrice);
-      setCategory(foundProduct.categoryId);
-      setIngredients(foundProduct.ingredients || []);
+    if (product) {
+      setName(product.name ?? '');
+      setDescription(product.description ?? '');
+      setBasePrice(product.basePrice ?? 0);
+      setCategory(product.categoryId ?? '');
+      setIngredients(product.ingredients ?? []);
     }
-  }, [id]);
+  }, [product]);
 
   const handleAddIngredient = () => {
     if (ingredientInput.trim()) {
@@ -41,14 +52,25 @@ export default function EditProductPage() {
     setIngredients(ingredients.filter((_, i) => i !== idx));
   };
 
-  const handleSave = () => {
-    // Save logic
-    alert('Product updated successfully!');
-    router.push('/admin/menu');
-  };
+  const handleSave = useCallback(async () => {
+    const success = await mutatePatch(
+      { name, description, basePrice, categoryId: category, ingredients },
+      `/api/menu/${id}`
+    );
+
+    if (success) {
+      router.push('/admin/menu');
+    } else {
+      alert('Failed to save changes. Please try again.');
+    }
+  }, [name, description, basePrice, category, ingredients, mutatePatch, id, router]);
+
+  if (productLoading || categoriesLoading) {
+    return <div className="p-10 text-center">Loading product data...</div>;
+  }
 
   if (!product) {
-    return <div className="p-10 text-center">Loading product data...</div>;
+    return <div className="p-10 text-center">Product not found.</div>;
   }
 
   return (
@@ -65,9 +87,10 @@ export default function EditProductPage() {
         </div>
         <button
           onClick={handleSave}
-          className="flex items-center gap-2 bg-[#B91C1C] hover:bg-[#991B1B] text-white font-bold px-5 py-2.5 rounded-xl transition-colors"
+          disabled={isSaving}
+          className="flex items-center gap-2 bg-[#B91C1C] hover:bg-[#991B1B] disabled:opacity-60 text-white font-bold px-5 py-2.5 rounded-xl transition-colors"
         >
-          <Save className="h-5 w-5" /> Save Changes
+          <Save className="h-5 w-5" /> {isSaving ? 'Saving…' : 'Save Changes'}
         </button>
       </div>
 

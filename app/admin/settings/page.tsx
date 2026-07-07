@@ -1,53 +1,119 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { Save } from 'lucide-react';
+import { useFirestoreDoc } from '@/hooks/useFirestoreDoc';
+import { useApiMutation } from '@/hooks/useApiMutation';
+
+interface DaySchedule {
+  isOpen: boolean;
+  open: string;
+  close: string;
+}
+
+interface WorkingHours {
+  [day: string]: DaySchedule;
+}
+
+interface SettingsData {
+  restaurantName: string;
+  phone: string;
+  address: string;
+  acceptOrders: boolean;
+  acceptAiCalls: boolean;
+  deliveryEnabled: boolean;
+  pickupEnabled: boolean;
+  preparationTime: number;
+  soundNotifications: boolean;
+  browserNotifications: boolean;
+  workingHours: WorkingHours;
+  logoUrl?: string;
+}
+
+const DAYS_ORDER = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+
+const DEFAULT_SETTINGS: SettingsData = {
+  restaurantName: '',
+  phone: '',
+  address: '',
+  acceptOrders: true,
+  acceptAiCalls: true,
+  deliveryEnabled: true,
+  pickupEnabled: true,
+  preparationTime: 25,
+  soundNotifications: true,
+  browserNotifications: false,
+  workingHours: DAYS_ORDER.reduce((acc, day) => {
+    acc[day] = { isOpen: true, open: '11:00', close: '23:00' };
+    return acc;
+  }, {} as WorkingHours),
+};
 
 export default function SettingsPage() {
-  const [settings, setSettings] = useState({
-    restaurantName: 'Crisp Quick',
-    phone: '+213 555 123 456',
-    address: 'Bab Ezzouar, Algiers',
-    acceptOrders: true,
-    acceptAICalls: true,
-    deliveryEnabled: true,
-    pickupEnabled: true,
-    prepTime: 25,
-    soundNotifications: true,
-    browserNotifications: false,
-    darkMode: false,
-  });
-  const [isSaving, setIsSaving] = useState(false);
+  const { data, isLoading } = useFirestoreDoc('settings', 'config');
+  const { mutate, isLoading: isSaving } = useApiMutation<SettingsData>('/api/settings', 'PUT');
+
+  const [settings, setSettings] = useState<SettingsData>(DEFAULT_SETTINGS);
   const [saved, setSaved] = useState(false);
 
+  // عند وصول البيانات من Firestore، نعبّي الـ state المحلي
+  useEffect(() => {
+    if (data) {
+      setSettings({
+        restaurantName: data.restaurantName ?? '',
+        phone: data.phone ?? '',
+        address: data.address ?? '',
+        acceptOrders: data.acceptOrders ?? true,
+        acceptAiCalls: data.acceptAiCalls ?? true,
+        deliveryEnabled: data.deliveryEnabled ?? true,
+        pickupEnabled: data.pickupEnabled ?? true,
+        preparationTime: data.preparationTime ?? 25,
+        soundNotifications: data.soundNotifications ?? true,
+        browserNotifications: data.browserNotifications ?? false,
+        workingHours: data.workingHours ?? DEFAULT_SETTINGS.workingHours,
+        logoUrl: data.logoUrl,
+      });
+    }
+  }, [data]);
+
+  const handleToggle = useCallback((key: keyof SettingsData) => {
+    setSettings((prev) => ({ ...prev, [key]: !prev[key] }));
+  }, []);
+
+  const handleScheduleChange = useCallback(
+    (day: string, field: keyof DaySchedule, value: string | boolean) => {
+      setSettings((prev) => ({
+        ...prev,
+        workingHours: {
+          ...prev.workingHours,
+          [day]: { ...prev.workingHours[day], [field]: value },
+        },
+      }));
+    },
+    []
+  );
+
+  const scheduleEntries = useMemo(
+    () => DAYS_ORDER.map((day) => ({ day, ...settings.workingHours[day] })),
+    [settings.workingHours]
+  );
+
   const handleSave = async () => {
-    setIsSaving(true);
     setSaved(false);
-    await new Promise((r) => setTimeout(r, 700)); // simulated API call
-    setIsSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+    const success = await mutate(settings);
+    if (success) {
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    }
   };
 
-  const [schedule, setSchedule] = useState([
-    { day: 'Monday', open: '11:00', close: '23:00', closed: false },
-    { day: 'Tuesday', open: '11:00', close: '23:00', closed: false },
-    { day: 'Wednesday', open: '11:00', close: '23:00', closed: false },
-    { day: 'Thursday', open: '11:00', close: '23:00', closed: false },
-    { day: 'Friday', open: '11:00', close: '23:00', closed: false },
-    { day: 'Saturday', open: '11:00', close: '23:00', closed: false },
-    { day: 'Sunday', open: '11:00', close: '23:00', closed: false },
-  ]);
-
-  const handleToggle = (key: string) => {
-    setSettings({ ...settings, [key]: !settings[key as keyof typeof settings] });
-  };
-
-  const handleScheduleChange = (idx: number, field: string, value: string | boolean) => {
-    const newSchedule = [...schedule];
-    newSchedule[idx] = { ...newSchedule[idx], [field]: value };
-    setSchedule(newSchedule);
-  };
+  if (isLoading) {
+    return (
+      <div className="max-w-4xl w-full mx-auto py-24 text-center text-[#6B7280]">
+        Loading settings…
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-4xl w-full mx-auto box-border pb-24">
@@ -98,46 +164,40 @@ export default function SettingsPage() {
       <div className="bg-white rounded-xl border border-[#E5E7EB] p-6">
         <h2 className="text-xl font-bold text-[#1A1A1A] mb-6">Operating Settings</h2>
         <div className="space-y-4">
-          {/* Toggles */}
           <div className="space-y-3">
             {[
-              { key: 'acceptOrders', label: 'Accept Web Orders' },
-              { key: 'acceptAICalls', label: 'Accept AI Call Orders' },
-              { key: 'deliveryEnabled', label: 'Delivery Enabled' },
-              { key: 'pickupEnabled', label: 'Pickup Enabled' },
+              { key: 'acceptOrders' as const, label: 'Accept Web Orders' },
+              { key: 'acceptAiCalls' as const, label: 'Accept AI Call Orders' },
+              { key: 'deliveryEnabled' as const, label: 'Delivery Enabled' },
+              { key: 'pickupEnabled' as const, label: 'Pickup Enabled' },
             ].map((toggle) => (
               <div key={toggle.key} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                 <p className="font-semibold text-[#1A1A1A]">{toggle.label}</p>
                 <button
                   onClick={() => handleToggle(toggle.key)}
-                  className={`relative w-12 h-6 rounded-full transition-colors ${
-                    settings[toggle.key as keyof typeof settings]
-                      ? 'bg-[#22C55E]'
-                      : 'bg-gray-300'
-                  }`}
+                  className={`relative w-12 h-6 rounded-full transition-colors ${settings[toggle.key] ? 'bg-[#22C55E]' : 'bg-gray-300'
+                    }`}
                 >
                   <div
-                    className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
-                      settings[toggle.key as keyof typeof settings] ? 'translate-x-6' : 'translate-x-1'
-                    }`}
+                    className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${settings[toggle.key] ? 'translate-x-6' : 'translate-x-1'
+                      }`}
                   />
                 </button>
               </div>
             ))}
           </div>
 
-          {/* Preparation Time */}
           <div className="p-3 bg-gray-50 rounded-lg">
             <div className="flex items-center justify-between mb-3">
               <p className="font-semibold text-[#1A1A1A]">Preparation Time</p>
-              <p className="text-lg font-bold text-[#B91C1C]">{settings.prepTime} min</p>
+              <p className="text-lg font-bold text-[#B91C1C]">{settings.preparationTime} min</p>
             </div>
             <input
               type="range"
               min="10"
               max="60"
-              value={settings.prepTime}
-              onChange={(e) => setSettings({ ...settings, prepTime: parseInt(e.target.value) })}
+              value={settings.preparationTime}
+              onChange={(e) => setSettings({ ...settings, preparationTime: parseInt(e.target.value) })}
               className="w-full"
             />
           </div>
@@ -148,34 +208,34 @@ export default function SettingsPage() {
       <div className="bg-white rounded-xl border border-[#E5E7EB] p-6">
         <h2 className="text-xl font-bold text-[#1A1A1A] mb-6">Weekly Schedule</h2>
         <div className="space-y-3">
-          {schedule.map((day, idx) => (
-            <div key={idx} className="flex flex-col sm:flex-row sm:items-center gap-4 p-3 bg-gray-50 rounded-lg w-full box-border">
+          {scheduleEntries.map(({ day, isOpen, open, close }) => (
+            <div key={day} className="flex flex-col sm:flex-row sm:items-center gap-4 p-3 bg-gray-50 rounded-lg w-full box-border">
               <div className="flex items-center justify-between w-full sm:w-auto">
-                <p className="font-semibold text-[#1A1A1A] sm:w-24">{day.day}</p>
+                <p className="font-semibold text-[#1A1A1A] sm:w-24 capitalize">{day}</p>
                 <label className="flex items-center gap-2 sm:w-auto">
                   <input
                     type="checkbox"
-                    checked={day.closed}
-                    onChange={(e) => handleScheduleChange(idx, 'closed', e.target.checked)}
+                    checked={!isOpen}
+                    onChange={(e) => handleScheduleChange(day, 'isOpen', !e.target.checked)}
                     className="h-4 w-4 rounded accent-[#B91C1C]"
                   />
                   <span className="text-sm text-[#6B7280]">Closed</span>
                 </label>
               </div>
 
-              {!day.closed && (
+              {isOpen && (
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto sm:flex-1">
                   <input
                     type="time"
-                    value={day.open}
-                    onChange={(e) => handleScheduleChange(idx, 'open', e.target.value)}
+                    value={open}
+                    onChange={(e) => handleScheduleChange(day, 'open', e.target.value)}
                     className="w-full sm:w-auto px-3 py-2 sm:py-1 border border-[#E5E7EB] rounded text-sm box-border flex-1"
                   />
                   <span className="hidden sm:inline text-[#6B7280]">to</span>
                   <input
                     type="time"
-                    value={day.close}
-                    onChange={(e) => handleScheduleChange(idx, 'close', e.target.value)}
+                    value={close}
+                    onChange={(e) => handleScheduleChange(day, 'close', e.target.value)}
                     className="w-full sm:w-auto px-3 py-2 sm:py-1 border border-[#E5E7EB] rounded text-sm box-border flex-1"
                   />
                 </div>
@@ -190,46 +250,23 @@ export default function SettingsPage() {
         <h2 className="text-xl font-bold text-[#1A1A1A] mb-6">Notifications</h2>
         <div className="space-y-3">
           {[
-            { key: 'soundNotifications', label: 'Sound Notifications' },
-            { key: 'browserNotifications', label: 'Browser Notifications' },
+            { key: 'soundNotifications' as const, label: 'Sound Notifications' },
+            { key: 'browserNotifications' as const, label: 'Browser Notifications' },
           ].map((notif) => (
             <div key={notif.key} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
               <p className="font-semibold text-[#1A1A1A]">{notif.label}</p>
               <button
                 onClick={() => handleToggle(notif.key)}
-                className={`relative w-12 h-6 rounded-full transition-colors ${
-                  settings[notif.key as keyof typeof settings]
-                    ? 'bg-[#22C55E]'
-                    : 'bg-gray-300'
-                }`}
+                className={`relative w-12 h-6 rounded-full transition-colors ${settings[notif.key] ? 'bg-[#22C55E]' : 'bg-gray-300'
+                  }`}
               >
                 <div
-                  className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
-                    settings[notif.key as keyof typeof settings] ? 'translate-x-6' : 'translate-x-1'
-                  }`}
+                  className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${settings[notif.key] ? 'translate-x-6' : 'translate-x-1'
+                    }`}
                 />
               </button>
             </div>
           ))}
-        </div>
-      </div>
-
-      {/* Dark Mode */}
-      <div className="bg-white rounded-xl border border-[#E5E7EB] p-6">
-        <div className="flex items-center justify-between">
-          <p className="font-semibold text-[#1A1A1A]">Dark Mode</p>
-          <button
-            onClick={() => handleToggle('darkMode')}
-            className={`relative w-12 h-6 rounded-full transition-colors ${
-              settings.darkMode ? 'bg-[#22C55E]' : 'bg-gray-300'
-            }`}
-          >
-            <div
-              className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
-                settings.darkMode ? 'translate-x-6' : 'translate-x-1'
-              }`}
-            />
-          </button>
         </div>
       </div>
 
@@ -239,7 +276,7 @@ export default function SettingsPage() {
           {saved ? (
             <span className="text-[#22C55E] font-semibold">✓ Changes saved</span>
           ) : (
-            'Unsaved changes are kept locally.'
+            'Changes are saved to the database.'
           )}
         </p>
         <button

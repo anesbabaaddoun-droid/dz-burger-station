@@ -293,9 +293,9 @@ export default function Home() {
                       setSelectedCategory(category.id);
                       document.getElementById('menu-section')?.scrollIntoView({ behavior: 'smooth' });
                     }}
-                    className="group relative flex flex-col items-center justify-center bg-[#1F1812] border border-[#3A2C22] rounded-2xl p-6 hover:border-[#B91C1C] hover:bg-[#241B16] transition-all aspect-square shadow-lg"
+                    className="group relative flex flex-col items-center justify-center bg-[#1F1812] border border-[#3A2C22] rounded-2xl p-6 hover:border-[#B91C1C] hover:bg-[#241B16] hover:scale-105 hover:shadow-2xl hover:shadow-[#B91C1C]/10 transition-all duration-300 aspect-square shadow-lg overflow-hidden"
                   >
-                    <div className="relative w-20 h-20 sm:w-24 sm:h-24 mb-4 rounded-full overflow-hidden bg-[#161210] group-hover:scale-110 transition-transform duration-300 ring-4 ring-[#161210] group-hover:ring-[#3A2C22]">
+                    <div className="relative w-20 h-20 sm:w-24 sm:h-24 mb-4 rounded-full overflow-hidden bg-[#161210] group-hover:scale-110 transition-transform duration-300 ring-4 ring-[#161210] group-hover:ring-[#B91C1C]/30">
                       <Image src={category.imageUrl} alt={category.name} fill className="object-cover" />
                     </div>
                     <span className="font-display tracking-wider text-[#F3EDE3] group-hover:text-[#E8A33D] transition-colors">{category.name}</span>

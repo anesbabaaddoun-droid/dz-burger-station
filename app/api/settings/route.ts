@@ -98,6 +98,8 @@ export async function PUT(request: Request) {
             browserNotifications,
             workingHours,
             logoUrl,
+            deliveryZones,
+            defaultDeliveryFee,
         } = body;
 
         if (!restaurantName || !phone || !address) {
@@ -120,6 +122,8 @@ export async function PUT(request: Request) {
             browserNotifications: browserNotifications ?? false,
             workingHours: workingHours ?? {},
             logoUrl: logoUrl ?? '/images/logo.png',
+            deliveryZones: deliveryZones ?? [],
+            defaultDeliveryFee: defaultDeliveryFee ?? 250,
             updatedAt: new Date(),
         };
 

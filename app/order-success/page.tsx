@@ -36,7 +36,7 @@ export default function OrderSuccessPage() {
 
         <div className="mt-8 p-5 bg-[#1F1812] rounded-xl border border-[#3A2C22]">
           <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-[#6B6358]">Order Number</p>
-          <p className="font-mono text-3xl font-bold text-[#E8A33D] mt-2">#{orderNumber}</p>
+          <p className="font-mono text-xl font-semibold text-[#A89A8C] mt-2">#{orderNumber}</p>
         </div>
 
         <div className="mt-10">

@@ -29,12 +29,12 @@ type Order = {
   notes?: string | null;
 };
 
-const STATUS_COLORS: Record<string, { bg: string; text: string; dot: string }> = {
-  Pending: { bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-400' },
-  Confirmed: { bg: 'bg-blue-50', text: 'text-blue-700', dot: 'bg-blue-500' },
-  'In Progress': { bg: 'bg-orange-50', text: 'text-orange-700', dot: 'bg-orange-500' },
-  Completed: { bg: 'bg-green-50', text: 'text-green-700', dot: 'bg-green-500' },
-  Cancelled: { bg: 'bg-red-50', text: 'text-red-700', dot: 'bg-red-400' },
+const STATUS_COLORS: Record<string, { bg: string; text: string; dot: string; darkBg: string; darkText: string }> = {
+  Pending: { bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-400', darkBg: 'admin-dark:bg-amber-900/30', darkText: 'admin-dark:text-amber-300' },
+  Confirmed: { bg: 'bg-blue-50', text: 'text-blue-700', dot: 'bg-blue-500', darkBg: 'admin-dark:bg-blue-900/30', darkText: 'admin-dark:text-blue-300' },
+  'In Progress': { bg: 'bg-orange-50', text: 'text-orange-700', dot: 'bg-orange-500', darkBg: 'admin-dark:bg-orange-900/30', darkText: 'admin-dark:text-orange-300' },
+  Completed: { bg: 'bg-green-50', text: 'text-green-700', dot: 'bg-green-500', darkBg: 'admin-dark:bg-green-900/30', darkText: 'admin-dark:text-green-300' },
+  Cancelled: { bg: 'bg-red-50', text: 'text-red-700', dot: 'bg-red-400', darkBg: 'admin-dark:bg-red-900/30', darkText: 'admin-dark:text-red-300' },
 };
 
 const SOURCE_STYLES: Record<string, string> = {
@@ -52,9 +52,9 @@ function formatItems(items: OrderItem[]): string[] {
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const s = STATUS_COLORS[status] ?? { bg: 'bg-gray-100', text: 'text-gray-600', dot: 'bg-gray-400' };
+  const s = STATUS_COLORS[status] ?? { bg: 'bg-gray-100', text: 'text-gray-600', dot: 'bg-gray-400', darkBg: 'admin-dark:bg-gray-800/30', darkText: 'admin-dark:text-gray-300' };
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${s.bg} ${s.text} admin-dark:text-white`}>
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${s.bg} ${s.text} ${s.darkBg} ${s.darkText}`}>
       <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
       {status}
     </span>

@@ -17,7 +17,19 @@ export async function POST(request: NextRequest) {
         const customer = call.customer ?? {};
         const analysis = message.analysis ?? {};
 
-        const customerName = customer.name || 'Unknown Caller';
+        // FIX: Prefer the name extracted from the conversation by the AI assistant.
+        // Vapi populates `analysis.structuredData` when the assistant is configured with a
+        // structured-data extraction schema (e.g. { customerName: "..." }).
+        // If your Vapi assistant is NOT configured for structured extraction, this will be
+        // undefined and we fall back to the caller-ID metadata (`customer.name`).
+        // To fix this at the source: configure your Vapi assistant's "Analysis Plan" with a
+        // JSON schema that extracts `customerName` from the conversation transcript.
+        const structuredName =
+            analysis.structuredData?.customerName ||
+            analysis.structuredData?.name ||
+            null;
+
+        const customerName = structuredName || customer.name || 'Unknown Caller';
         const customerPhone = customer.number || 'Unknown';
         const transcript = message.transcript || '';
         const summary = analysis.summary || '';

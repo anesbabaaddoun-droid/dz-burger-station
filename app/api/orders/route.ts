@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { collection, addDoc, getDocs, orderBy, query, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, getDocs, orderBy, query, Timestamp, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 export async function GET() {
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
 
-        const { customerName, customerPhone, orderType, items, deliveryAddress, notes, source } = body;
+        const { customerName, customerPhone, orderType, items, deliveryAddress, notes, source, deliveryFee: bodyDeliveryFee, extraPrepMinutes: bodyExtraPrepMinutes } = body;
 
         if (!customerName || !customerPhone || !orderType || !items) {
             return NextResponse.json(
@@ -38,8 +38,21 @@ export async function POST(request: NextRequest) {
             return sum + (Number(item.price) || 0) * (Number(item.quantity) || 0);
         }, 0);
 
-        const deliveryFee = orderType === 'Delivery' ? 0 : 0;
+        // Use the fee sent by the client checkout (zone-based) or 0 for non-delivery.
+        const deliveryFee = orderType === 'Delivery' ? (Number(bodyDeliveryFee) || 0) : 0;
+        const extraPrepMinutes = Number(bodyExtraPrepMinutes) || 0;
         const total = subtotal + deliveryFee;
+
+        // Fetch base preparation time from settings so estimatedPrepMinutes is persisted on the order.
+        let basePrepTime = 25; // safe fallback
+        try {
+            const settingsSnap = await getDoc(doc(db, 'settings', 'config'));
+            if (settingsSnap.exists()) {
+                basePrepTime = settingsSnap.data().preparationTime ?? 25;
+            }
+        } catch { /* keep fallback */ }
+
+        const estimatedPrepMinutes = basePrepTime + extraPrepMinutes;
 
         const order = {
             customerName,
@@ -53,6 +66,7 @@ export async function POST(request: NextRequest) {
             deliveryFee,
             subtotal,
             total,
+            estimatedPrepMinutes,
             paymentMethod: 'COD',
             aiCallId: null,
             createdAt: Timestamp.now(),

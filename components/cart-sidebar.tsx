@@ -6,12 +6,19 @@ import { formatDA } from '@/lib/format';
 import { X, Minus, Plus, ShoppingCart } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface CartSidebarProps {
   isOpen: boolean;
   onClose: () => void;
 }
+
+type DeliveryZone = {
+  id: string;
+  neighborhood: string;
+  fee: number;
+  extraPrepMinutes: number;
+};
 
 type OrderPayload = {
   customerName: string;
@@ -21,6 +28,8 @@ type OrderPayload = {
   items: { itemId: string; name: string; price: number; quantity: number }[];
   deliveryAddress: string | null;
   notes: string | null;
+  deliveryFee: number;
+  extraPrepMinutes: number;
 };
 
 export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
@@ -33,13 +42,45 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
   const [customerPhone, setCustomerPhone] = useState('');
   const [neighborhood, setNeighborhood] = useState('');
   const [street, setStreet] = useState('');
-  const [landmark, setLandmark] = useState('');
   const [notes, setNotes] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
 
+  // Delivery zones fetched from settings
+  const [deliveryZones, setDeliveryZones] = useState<DeliveryZone[]>([]);
+  const [defaultDeliveryFee, setDefaultDeliveryFee] = useState(250);
+  const [settingsFetched, setSettingsFetched] = useState(false);
+
   const { mutate, isLoading } = useApiMutation<OrderPayload>('/api/orders', 'POST');
 
-  const total = getTotal();
+  const subtotal = getTotal();
+
+  // Fetch delivery zones once when checkout opens
+  useEffect(() => {
+    if (isCheckout && !settingsFetched) {
+      fetch('/api/settings')
+        .then((r) => r.json())
+        .then((res) => {
+          if (res.success && res.data) {
+            setDeliveryZones(res.data.deliveryZones ?? []);
+            setDefaultDeliveryFee(res.data.defaultDeliveryFee ?? 250);
+          }
+        })
+        .catch(() => { /* silently keep defaults */ })
+        .finally(() => setSettingsFetched(true));
+    }
+  }, [isCheckout, settingsFetched]);
+
+  // Compute delivery fee + extra prep from selected neighborhood
+  const matchedZone = deliveryZones.find(
+    (z) => z.neighborhood === neighborhood && neighborhood !== '' && neighborhood !== '__other__'
+  );
+  const computedDeliveryFee =
+    orderType === 'delivery'
+      ? (matchedZone ? matchedZone.fee : defaultDeliveryFee)
+      : 0;
+  const computedExtraPrepMinutes = matchedZone ? matchedZone.extraPrepMinutes : 0;
+
+  const grandTotal = subtotal + computedDeliveryFee;
 
   if (!isOpen) return null;
 
@@ -63,7 +104,7 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
 
     const deliveryAddress =
       orderType === 'delivery'
-        ? [neighborhood, street, landmark].filter(Boolean).join(', ')
+        ? [neighborhood === '__other__' ? '' : neighborhood, street].filter(Boolean).join(', ') || null
         : null;
 
     const orderItems = items.map((item) => ({
@@ -81,6 +122,8 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
       items: orderItems,
       deliveryAddress,
       notes: notes.trim() || null,
+      deliveryFee: computedDeliveryFee,
+      extraPrepMinutes: computedExtraPrepMinutes,
     };
 
     const success = await mutate(payload);
@@ -188,13 +231,17 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
                     <label className="block text-sm font-semibold text-[#F3EDE3] mb-2">
                       Neighborhood <span className="text-[#B91C1C]">*</span>
                     </label>
-                    <input
-                      type="text"
+                    <select
                       value={neighborhood}
                       onChange={(e) => setNeighborhood(e.target.value)}
-                      placeholder="e.g. Bab Ezzouar"
-                      className="w-full px-4 py-2.5 bg-[#1F1812] border border-[#3A2C22] text-[#F3EDE3] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#B91C1C]"
-                    />
+                      className="w-full px-4 py-2.5 bg-[#1F1812] border border-[#3A2C22] text-[#F3EDE3] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#B91C1C] appearance-none"
+                    >
+                      <option value="">— Select your neighborhood —</option>
+                      {deliveryZones.map((z) => (
+                        <option key={z.id} value={z.neighborhood}>{z.neighborhood}</option>
+                      ))}
+                      <option value="__other__">Other (not listed)</option>
+                    </select>
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-[#F3EDE3] mb-2">Street</label>
@@ -203,16 +250,6 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
                       value={street}
                       onChange={(e) => setStreet(e.target.value)}
                       placeholder="Street name"
-                      className="w-full px-4 py-2.5 bg-[#1F1812] border border-[#3A2C22] text-[#F3EDE3] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#B91C1C]"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-[#F3EDE3] mb-2">Landmark</label>
-                    <input
-                      type="text"
-                      value={landmark}
-                      onChange={(e) => setLandmark(e.target.value)}
-                      placeholder="Nearby landmark"
                       className="w-full px-4 py-2.5 bg-[#1F1812] border border-[#3A2C22] text-[#F3EDE3] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#B91C1C]"
                     />
                   </div>
@@ -241,15 +278,28 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
           <div className="border-t border-[#3A2C22] p-6 space-y-2">
             <div className="flex items-center justify-between text-sm">
               <span className="text-[#A89A8C]">Subtotal</span>
-              <span className="font-mono text-[#F3EDE3]">{formatDA(total)}</span>
+              <span className="font-mono text-[#F3EDE3]">{formatDA(subtotal)}</span>
             </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-[#A89A8C]">Delivery</span>
-              <span className="font-mono text-[#E8A33D]">Confirmed by phone</span>
-            </div>
+            {orderType === 'delivery' ? (
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-[#A89A8C]">Delivery fee</span>
+                <span className="font-mono text-[#E8A33D]">
+                  {neighborhood && neighborhood !== '__other__' && neighborhood !== ''
+                    ? formatDA(computedDeliveryFee)
+                    : neighborhood === '__other__'
+                      ? `~${formatDA(defaultDeliveryFee)} (to confirm)`
+                      : '— select neighborhood'}
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-[#A89A8C]">Pickup</span>
+                <span className="font-mono text-[#22C55E]">Free</span>
+              </div>
+            )}
             <div className="flex items-center justify-between pt-1">
               <span className="font-semibold text-[#F3EDE3]">Total</span>
-              <span className="font-mono text-xl font-bold text-[#E8A33D]">{formatDA(total)}</span>
+              <span className="font-mono text-xl font-bold text-[#E8A33D]">{formatDA(grandTotal)}</span>
             </div>
             <button
               onClick={handlePlaceOrder}
@@ -342,7 +392,7 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
             <div className="border-t border-[#3A2C22] p-6 space-y-2">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-[#A89A8C]">Subtotal</span>
-                <span className="font-mono text-[#F3EDE3]">{formatDA(total)}</span>
+                <span className="font-mono text-[#F3EDE3]">{formatDA(subtotal)}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-[#A89A8C]">Delivery</span>

@@ -1,10 +1,11 @@
 'use client';
 
 import { useCart } from '@/lib/cart-context';
+import { useApiMutation } from '@/hooks/useApiMutation';
 import { formatDA } from '@/lib/format';
 import { X, Minus, Plus, ShoppingCart } from 'lucide-react';
 import Image from 'next/image';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 interface CartSidebarProps {
@@ -12,14 +13,87 @@ interface CartSidebarProps {
   onClose: () => void;
 }
 
+type OrderPayload = {
+  customerName: string;
+  customerPhone: string;
+  orderType: 'Delivery' | 'Pickup';
+  source: 'Website';
+  items: { itemId: string; name: string; price: number; quantity: number }[];
+  deliveryAddress: string | null;
+  notes: string | null;
+};
+
 export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
-  const { items, removeItem, updateQuantity, getTotal } = useCart();
+  const { items, removeItem, updateQuantity, getTotal, clearCart } = useCart();
+  const router = useRouter();
   const [isCheckout, setIsCheckout] = useState(false);
   const [orderType, setOrderType] = useState<'delivery' | 'pickup'>('delivery');
+
+  const [customerName, setCustomerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [neighborhood, setNeighborhood] = useState('');
+  const [street, setStreet] = useState('');
+  const [landmark, setLandmark] = useState('');
+  const [notes, setNotes] = useState('');
+  const [formError, setFormError] = useState<string | null>(null);
+
+  const { mutate, isLoading } = useApiMutation<OrderPayload>('/api/orders', 'POST');
 
   const total = getTotal();
 
   if (!isOpen) return null;
+
+  const isFormValid = () => {
+    if (!customerName.trim() || !customerPhone.trim()) return false;
+    if (orderType === 'delivery' && !neighborhood.trim()) return false;
+    return true;
+  };
+
+  const handlePlaceOrder = async () => {
+    setFormError(null);
+
+    if (!customerName.trim() || !customerPhone.trim()) {
+      setFormError('Please enter your name and phone number.');
+      return;
+    }
+    if (orderType === 'delivery' && !neighborhood.trim()) {
+      setFormError('Please enter your neighborhood for delivery.');
+      return;
+    }
+
+    const deliveryAddress =
+      orderType === 'delivery'
+        ? [neighborhood, street, landmark].filter(Boolean).join(', ')
+        : null;
+
+    const orderItems = items.map((item) => ({
+      itemId: item.menuItemId,
+      name: item.variantName ? `${item.name} (${item.variantName})` : item.name,
+      price: item.variantPrice + item.selectedExtras.reduce((sum, e) => sum + e.price, 0),
+      quantity: item.quantity,
+    }));
+
+    const payload: OrderPayload = {
+      customerName: customerName.trim(),
+      customerPhone: customerPhone.trim(),
+      orderType: orderType === 'delivery' ? 'Delivery' : 'Pickup',
+      source: 'Website',
+      items: orderItems,
+      deliveryAddress,
+      notes: notes.trim() || null,
+    };
+
+    const success = await mutate(payload);
+
+    if (success) {
+      clearCart();
+      setIsCheckout(false);
+      onClose();
+      router.push('/order-success');
+    } else {
+      setFormError('Something went wrong placing your order. Please try again.');
+    }
+  };
 
   if (isCheckout) {
     return (
@@ -54,7 +128,7 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
                       <span className="font-mono text-[#F3EDE3]">
                         {formatDA(
                           (item.variantPrice + item.selectedExtras.reduce((sum, e) => sum + e.price, 0)) *
-                            item.quantity
+                          item.quantity
                         )}
                       </span>
                     </div>
@@ -71,11 +145,10 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
                     <button
                       key={t}
                       onClick={() => setOrderType(t)}
-                      className={`py-2.5 rounded-full font-semibold text-sm capitalize border transition-colors ${
-                        orderType === t
+                      className={`py-2.5 rounded-full font-semibold text-sm capitalize border transition-colors ${orderType === t
                           ? 'bg-[#B91C1C] text-[#F3EDE3] border-[#B91C1C]'
                           : 'bg-[#1F1812] text-[#A89A8C] border-[#3A2C22]'
-                      }`}
+                        }`}
                     >
                       {t}
                     </button>
@@ -84,18 +157,26 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-[#F3EDE3] mb-2">Full Name</label>
+                <label className="block text-sm font-semibold text-[#F3EDE3] mb-2">
+                  Full Name <span className="text-[#B91C1C]">*</span>
+                </label>
                 <input
                   type="text"
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
                   placeholder="Enter your name"
                   className="w-full px-4 py-2.5 bg-[#1F1812] border border-[#3A2C22] text-[#F3EDE3] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#B91C1C]"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-[#F3EDE3] mb-2">Phone Number</label>
+                <label className="block text-sm font-semibold text-[#F3EDE3] mb-2">
+                  Phone Number <span className="text-[#B91C1C]">*</span>
+                </label>
                 <input
                   type="tel"
+                  value={customerPhone}
+                  onChange={(e) => setCustomerPhone(e.target.value)}
                   placeholder="+213 555 123 456"
                   className="w-full px-4 py-2.5 bg-[#1F1812] border border-[#3A2C22] text-[#F3EDE3] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#B91C1C]"
                 />
@@ -104,9 +185,13 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
               {orderType === 'delivery' && (
                 <>
                   <div>
-                    <label className="block text-sm font-semibold text-[#F3EDE3] mb-2">Neighborhood</label>
+                    <label className="block text-sm font-semibold text-[#F3EDE3] mb-2">
+                      Neighborhood <span className="text-[#B91C1C]">*</span>
+                    </label>
                     <input
                       type="text"
+                      value={neighborhood}
+                      onChange={(e) => setNeighborhood(e.target.value)}
                       placeholder="e.g. Bab Ezzouar"
                       className="w-full px-4 py-2.5 bg-[#1F1812] border border-[#3A2C22] text-[#F3EDE3] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#B91C1C]"
                     />
@@ -115,6 +200,8 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
                     <label className="block text-sm font-semibold text-[#F3EDE3] mb-2">Street</label>
                     <input
                       type="text"
+                      value={street}
+                      onChange={(e) => setStreet(e.target.value)}
                       placeholder="Street name"
                       className="w-full px-4 py-2.5 bg-[#1F1812] border border-[#3A2C22] text-[#F3EDE3] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#B91C1C]"
                     />
@@ -123,6 +210,8 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
                     <label className="block text-sm font-semibold text-[#F3EDE3] mb-2">Landmark</label>
                     <input
                       type="text"
+                      value={landmark}
+                      onChange={(e) => setLandmark(e.target.value)}
                       placeholder="Nearby landmark"
                       className="w-full px-4 py-2.5 bg-[#1F1812] border border-[#3A2C22] text-[#F3EDE3] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#B91C1C]"
                     />
@@ -133,11 +222,19 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
               <div>
                 <label className="block text-sm font-semibold text-[#F3EDE3] mb-2">Notes (optional)</label>
                 <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
                   placeholder="Any special requests?"
                   rows={2}
                   className="w-full px-4 py-2.5 bg-[#1F1812] border border-[#3A2C22] text-[#F3EDE3] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#B91C1C]"
                 />
               </div>
+
+              {formError && (
+                <p className="text-sm text-[#EF4444] bg-[#EF4444]/10 border border-[#EF4444]/30 rounded-lg px-3 py-2">
+                  {formError}
+                </p>
+              )}
             </div>
           </div>
 
@@ -154,11 +251,13 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
               <span className="font-semibold text-[#F3EDE3]">Total</span>
               <span className="font-mono text-xl font-bold text-[#E8A33D]">{formatDA(total)}</span>
             </div>
-            <Link href="/order-success">
-              <button className="w-full mt-2 bg-[#B91C1C] text-[#F3EDE3] font-bold py-3 rounded-full hover:bg-[#991B1B] transition-colors">
-                Place Order (COD)
-              </button>
-            </Link>
+            <button
+              onClick={handlePlaceOrder}
+              disabled={isLoading || !isFormValid()}
+              className="w-full mt-2 bg-[#B91C1C] text-[#F3EDE3] font-bold py-3 rounded-full hover:bg-[#991B1B] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoading ? 'Placing Order…' : 'Place Order (COD)'}
+            </button>
             <button
               onClick={() => setIsCheckout(false)}
               className="w-full bg-[#241B16] text-[#A89A8C] font-semibold py-2.5 rounded-full hover:bg-[#2A2018] transition-colors border border-[#3A2C22]"

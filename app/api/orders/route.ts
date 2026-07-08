@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
 
-        const { customerName, customerPhone, orderType, items, deliveryAddress, notes } = body;
+        const { customerName, customerPhone, orderType, items, deliveryAddress, notes, source } = body;
 
         if (!customerName || !customerPhone || !orderType || !items) {
             return NextResponse.json(
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
             customerName,
             customerPhone,
             orderType,
-            source: 'AI Call',
+            source: source === 'Website' ? 'Website' : 'AI Call',
             status: 'Pending',
             items: parsedItems,
             deliveryAddress: deliveryAddress || null,

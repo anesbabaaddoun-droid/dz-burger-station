@@ -6,6 +6,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useFirestoreCollection } from '@/hooks/useFirestoreCollection';
 import { useApiMutation } from '@/hooks/useApiMutation';
+import { uploadImageToCloudinary } from '@/lib/cloudinary';
 
 interface Category {
   id: string;
@@ -31,6 +32,7 @@ interface NewProductPayload {
   categoryId: string;
   basePrice: number;
   ingredients: string[];
+  imageUrl: string;
 }
 
 export default function MenuPage() {
@@ -45,12 +47,14 @@ export default function MenuPage() {
   const [ingredients, setIngredients] = useState<string[]>([]);
   const [ingredientInput, setIngredientInput] = useState('');
 
-  // Add Product form fields
   const [newName, setNewName] = useState('');
   const [newDescription, setNewDescription] = useState('');
   const [newCategory, setNewCategory] = useState('');
   const [newPrice, setNewPrice] = useState('');
+  const [newImageFile, setNewImageFile] = useState<File | null>(null);
+  const [newImagePreview, setNewImagePreview] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   const { mutate: mutatePatch } = useApiMutation<Partial<MenuItemData>>('', 'PATCH');
   const { mutate: mutateDelete } = useApiMutation<undefined>('', 'DELETE');
@@ -71,6 +75,8 @@ export default function MenuPage() {
     setNewDescription('');
     setNewCategory('');
     setNewPrice('');
+    setNewImageFile(null);
+    setNewImagePreview('');
   };
 
   const handleAddIngredient = () => {
@@ -82,6 +88,14 @@ export default function MenuPage() {
 
   const handleRemoveIngredient = (idx: number) => {
     setIngredients(ingredients.filter((_, i) => i !== idx));
+  };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setNewImageFile(file);
+      setNewImagePreview(URL.createObjectURL(file));
+    }
   };
 
   const handleDeleteProduct = useCallback(async (id: string) => {
@@ -98,28 +112,41 @@ export default function MenuPage() {
   }, [mutatePatch, refetchProducts]);
 
   const handleSaveNewProduct = useCallback(async () => {
-    if (!newName.trim() || !newCategory || !newPrice || ingredients.length === 0) {
-      alert('Please fill in all required fields (name, category, price, ingredients).');
+    if (!newName.trim() || !newCategory || !newPrice || ingredients.length === 0 || !newImageFile) {
+      alert('Please fill in all required fields, including a product image.');
       return;
     }
 
     setIsSubmitting(true);
-    const success = await mutateCreate({
-      name: newName.trim(),
-      description: newDescription.trim(),
-      categoryId: newCategory,
-      basePrice: Number(newPrice),
-      ingredients,
-    });
-    setIsSubmitting(false);
+    setIsUploadingImage(true);
 
-    if (success) {
-      refetchProducts();
-      resetAddForm();
-    } else {
-      alert('Failed to save product. Please try again.');
+    try {
+      const imageUrl = await uploadImageToCloudinary(newImageFile);
+      setIsUploadingImage(false);
+
+      const success = await mutateCreate({
+        name: newName.trim(),
+        description: newDescription.trim(),
+        categoryId: newCategory,
+        basePrice: Number(newPrice),
+        ingredients,
+        imageUrl,
+      });
+
+      if (success) {
+        refetchProducts();
+        resetAddForm();
+      } else {
+        alert('Failed to save product. Please try again.');
+      }
+    } catch (error) {
+      console.error('Image upload failed:', error);
+      alert('Failed to upload image. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+      setIsUploadingImage(false);
     }
-  }, [newName, newDescription, newCategory, newPrice, ingredients, mutateCreate, refetchProducts]);
+  }, [newName, newDescription, newCategory, newPrice, ingredients, newImageFile, mutateCreate, refetchProducts]);
 
   if (categoriesLoading || productsLoading) {
     return <div className="py-24 text-center text-[#6B7280]">Loading menu…</div>;
@@ -127,7 +154,6 @@ export default function MenuPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-[#1A1A1A]">Menu Management</h1>
@@ -145,7 +171,6 @@ export default function MenuPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Categories Sidebar */}
         <div className="lg:col-span-1">
           <div className="bg-white rounded-xl border border-[#E5E7EB] p-4">
             <h3 className="font-bold text-[#1A1A1A] mb-4">Categories</h3>
@@ -155,8 +180,8 @@ export default function MenuPage() {
                   key={cat.id}
                   onClick={() => setSelectedCategory(cat.id)}
                   className={`w-full text-left px-4 py-3 rounded-lg transition-colors font-semibold text-sm ${activeCategory === cat.id
-                      ? 'bg-[#B91C1C] text-white'
-                      : 'bg-gray-100 text-[#1A1A1A] hover:bg-gray-200'
+                    ? 'bg-[#B91C1C] text-white'
+                    : 'bg-gray-100 text-[#1A1A1A] hover:bg-gray-200'
                     }`}
                 >
                   {cat.name}
@@ -166,7 +191,6 @@ export default function MenuPage() {
           </div>
         </div>
 
-        {/* Products List */}
         <div className="lg:col-span-3">
           <div className="bg-white rounded-xl border border-[#E5E7EB] overflow-hidden">
             <div className="p-6 border-b border-[#E5E7EB]">
@@ -177,7 +201,6 @@ export default function MenuPage() {
 
             {categoryProducts.length > 0 ? (
               <div className="w-full">
-                {/* Mobile View: Cards */}
                 <div className="grid grid-cols-1 gap-4 p-4 md:hidden">
                   {categoryProducts.map((product) => (
                     <div key={product.id} className="border border-[#E5E7EB] rounded-lg p-4 flex gap-4">
@@ -216,7 +239,6 @@ export default function MenuPage() {
                   ))}
                 </div>
 
-                {/* Desktop View: Table */}
                 <div className="hidden md:block overflow-x-auto">
                   <table className="w-full">
                     <thead className="bg-gray-50 border-b border-[#E5E7EB]">
@@ -284,7 +306,6 @@ export default function MenuPage() {
         </div>
       </div>
 
-      {/* Add Product Modal — now fully functional */}
       {showAddProduct && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-end sm:justify-center z-[100] p-0 sm:p-4">
           <div className="bg-white rounded-t-2xl sm:rounded-xl w-full max-w-full sm:max-w-2xl max-h-[90vh] sm:max-h-[85vh] flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 sm:slide-in-from-bottom-0 sm:zoom-in-95 box-border">
@@ -299,6 +320,23 @@ export default function MenuPage() {
             </div>
 
             <div className="overflow-y-auto p-4 sm:p-6 space-y-4 flex-1 box-border w-full">
+              <div>
+                <label className="block text-sm font-semibold text-[#1A1A1A] mb-2">Product Image *</label>
+                <div className="flex items-center gap-4">
+                  {newImagePreview ? (
+                    <img src={newImagePreview} alt="Preview" className="h-20 w-20 rounded-lg object-cover border border-[#E5E7EB]" />
+                  ) : (
+                    <div className="h-20 w-20 rounded-lg bg-gray-100 border border-dashed border-[#E5E7EB] flex items-center justify-center text-xs text-gray-400 text-center px-1">
+                      No image
+                    </div>
+                  )}
+                  <label className="cursor-pointer px-4 py-2 bg-gray-900 text-white text-sm font-semibold rounded-lg hover:bg-gray-800 transition-colors">
+                    {newImageFile ? 'Change Image' : 'Upload Image'}
+                    <input type="file" accept="image/*" onChange={handleImageSelect} className="hidden" />
+                  </label>
+                </div>
+              </div>
+
               <div>
                 <label className="block text-sm font-semibold text-[#1A1A1A] mb-2">Product Name</label>
                 <input
@@ -398,10 +436,10 @@ export default function MenuPage() {
                 </button>
                 <button
                   onClick={handleSaveNewProduct}
-                  disabled={ingredients.length === 0 || isSubmitting}
+                  disabled={ingredients.length === 0 || !newImageFile || isSubmitting}
                   className="flex-1 px-4 py-3 sm:py-2 bg-[#B91C1C] text-white font-semibold rounded-full hover:bg-[#991B1B] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isSubmitting ? 'Saving…' : 'Save Product'}
+                  {isUploadingImage ? 'Uploading image…' : isSubmitting ? 'Saving…' : 'Save Product'}
                 </button>
               </div>
             </div>

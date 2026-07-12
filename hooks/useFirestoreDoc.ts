@@ -11,13 +11,19 @@ interface UseFirestoreDocReturn {
 
 export function useFirestoreDoc(
     collectionName: string,
-    docId: string
+    docId: string | undefined
 ): UseFirestoreDocReturn {
     const [data, setData] = useState<DocumentData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     const refetch = useCallback(async () => {
+        // لا تحاول الجلب إذا لم يكن هناك docId صالح بعد
+        if (!collectionName || !docId) {
+            setIsLoading(false);
+            return;
+        }
+
         setIsLoading(true);
         setError(null);
         try {

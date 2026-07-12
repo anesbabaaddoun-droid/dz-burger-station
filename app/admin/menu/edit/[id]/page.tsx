@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useFirestoreDoc } from '@/hooks/useFirestoreDoc';
 import { useFirestoreCollection } from '@/hooks/useFirestoreCollection';
 import { useApiMutation } from '@/hooks/useApiMutation';
+import { uploadImageToCloudinary } from '@/lib/cloudinary';
 
 interface Category {
   id: string;
@@ -31,6 +32,10 @@ export default function EditProductPage() {
   const [ingredients, setIngredients] = useState<string[]>([]);
   const [ingredientInput, setIngredientInput] = useState('');
 
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>('');
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+
   useEffect(() => {
     if (product) {
       setName(product.name ?? '');
@@ -38,6 +43,7 @@ export default function EditProductPage() {
       setBasePrice(product.basePrice ?? 0);
       setCategory(product.categoryId ?? '');
       setIngredients(product.ingredients ?? []);
+      setImagePreview(product.imageUrl ?? '');
     }
   }, [product]);
 
@@ -52,18 +58,41 @@ export default function EditProductPage() {
     setIngredients(ingredients.filter((_, i) => i !== idx));
   };
 
-  const handleSave = useCallback(async () => {
-    const success = await mutatePatch(
-      { name, description, basePrice, categoryId: category, ingredients },
-      `/api/menu/${id}`
-    );
-
-    if (success) {
-      router.push('/admin/menu');
-    } else {
-      alert('Failed to save changes. Please try again.');
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
     }
-  }, [name, description, basePrice, category, ingredients, mutatePatch, id, router]);
+  };
+
+  const handleSave = useCallback(async () => {
+    let imageUrl = product?.imageUrl ?? '';
+
+    try {
+      if (imageFile) {
+        setIsUploadingImage(true);
+        imageUrl = await uploadImageToCloudinary(imageFile);
+        setIsUploadingImage(false);
+      }
+
+      const success = await mutatePatch(
+        { name, description, basePrice, categoryId: category, ingredients, imageUrl },
+        `/api/menu/${id}`
+      );
+
+      if (success) {
+        router.push('/admin/menu');
+      } else {
+        alert('Failed to save changes. Please try again.');
+      }
+    } catch (error) {
+      console.error('Image upload failed:', error);
+      alert('Failed to upload image. Please try again.');
+    } finally {
+      setIsUploadingImage(false);
+    }
+  }, [name, description, basePrice, category, ingredients, imageFile, product, mutatePatch, id, router]);
 
   if (productLoading || categoriesLoading) {
     return <div className="p-10 text-center">Loading product data...</div>;
@@ -87,15 +116,33 @@ export default function EditProductPage() {
         </div>
         <button
           onClick={handleSave}
-          disabled={isSaving}
+          disabled={isSaving || isUploadingImage}
           className="flex items-center gap-2 bg-[#B91C1C] hover:bg-[#991B1B] disabled:opacity-60 text-white font-bold px-5 py-2.5 rounded-xl transition-colors"
         >
-          <Save className="h-5 w-5" /> {isSaving ? 'Saving…' : 'Save Changes'}
+          <Save className="h-5 w-5" />
+          {isUploadingImage ? 'Uploading image…' : isSaving ? 'Saving…' : 'Save Changes'}
         </button>
       </div>
 
       <div className="bg-white admin-dark:bg-[#000000] rounded-xl border border-[#E5E7EB] admin-dark:border-[#2E2E2E] overflow-hidden shadow-sm">
         <div className="p-6 space-y-6">
+          <div>
+            <label className="block text-sm font-semibold text-[#1A1A1A] admin-dark:text-white mb-2">Product Image</label>
+            <div className="flex items-center gap-4">
+              {imagePreview ? (
+                <img src={imagePreview} alt="Preview" className="h-20 w-20 rounded-lg object-cover border border-[#E5E7EB] admin-dark:border-[#2E2E2E]" />
+              ) : (
+                <div className="h-20 w-20 rounded-lg bg-gray-100 admin-dark:bg-[#1A1A1A] border border-dashed border-[#E5E7EB] admin-dark:border-[#2E2E2E] flex items-center justify-center text-xs text-gray-400 text-center px-1">
+                  No image
+                </div>
+              )}
+              <label className="cursor-pointer px-4 py-2 bg-gray-900 admin-dark:bg-white text-white admin-dark:text-black text-sm font-semibold rounded-lg hover:bg-gray-800 transition-colors">
+                Change Image
+                <input type="file" accept="image/*" onChange={handleImageSelect} className="hidden" />
+              </label>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-semibold text-[#1A1A1A] admin-dark:text-white mb-2">Product Name</label>

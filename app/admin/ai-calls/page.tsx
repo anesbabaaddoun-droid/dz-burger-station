@@ -142,6 +142,58 @@ export default function AiCallsPage() {
       </div>
 
       <div className="bg-white admin-dark:bg-black border border-[#E5E7EB] admin-dark:border-[#2E2E2E] rounded-xl shadow-sm">
+
+        {/* Mobile Cards */}
+        <div className="sm:hidden space-y-4 p-4">
+          {typedCalls.length > 0 ? (
+            typedCalls.map((call) => (
+              <div
+                key={call.id}
+                className="bg-white admin-dark:bg-black border border-[#E5E7EB] admin-dark:border-[#2E2E2E] rounded-xl p-4 shadow-sm flex flex-col gap-3 hover:bg-[#F9FAFB] admin-dark:hover:bg-[#111111] transition-colors"
+              >
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="font-semibold text-[#111827] admin-dark:text-white">{call.customerName}</p>
+                    <p className="text-xs text-[#9CA3AF] mt-0.5">{call.customerPhone}</p>
+                    <span className="font-mono text-xs text-[#6B7280]">{call.aiCallId ?? call.id}</span>
+                  </div>
+                  <StatusBadge status={call.status} />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-sm border-y border-[#E5E7EB] admin-dark:border-[#2E2E2E] py-3">
+                  <div>
+                    <p className="text-xs text-[#6B7280] mb-1">Order Type</p>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-teal-100 text-teal-700 admin-dark:bg-teal-900/30 admin-dark:text-teal-300">
+                      {call.orderType}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-xs text-[#6B7280] mb-1">Duration</p>
+                    <span className="text-sm text-[#374151] admin-dark:text-white font-medium">{call.duration}</span>
+                  </div>
+                </div>
+
+                <div className="flex justify-between items-center pt-1">
+                  <span className="text-xs text-[#6B7280] truncate max-w-[60%]">
+                    {call.summary ? `${call.summary.slice(0, 40)}...` : 'No summary'}
+                  </span>
+                  <button
+                    onClick={() => setSelectedCall(call)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#E5E7EB] text-xs font-semibold text-[#374151] hover:bg-[#F3F4F6] transition-all"
+                  >
+                    <Eye className="h-3.5 w-3.5" /> Details
+                  </button>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="text-center py-10 bg-white admin-dark:bg-black rounded-xl border border-[#E5E7EB] text-[#9CA3AF]">
+              <p className="text-base font-medium">No AI calls yet</p>
+            </div>
+          )}
+        </div>
+
+        {/* Desktop Table */}
         <div className="hidden sm:block overflow-x-auto overflow-y-visible rounded-xl">
           <table className="w-full text-sm min-w-max whitespace-nowrap">
             <thead>

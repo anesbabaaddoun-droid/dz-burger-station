@@ -1,7 +1,5 @@
 'use client';
 
-'use client';
-
 import { useState, useMemo, useCallback } from 'react';
 import { Eye, Trash2, Check, X, ChevronDown } from 'lucide-react';
 import { useRealtimeCollection } from '@/hooks/useRealtimeCollection';
@@ -46,10 +44,6 @@ const ORDER_TYPE_STYLES: Record<string, string> = {
   Delivery: 'bg-sky-100 text-sky-700',
   Pickup: 'bg-teal-100 text-teal-700',
 };
-
-function formatItems(items: OrderItem[]): string[] {
-  return items.map((item) => `${item.name} x${item.quantity}`);
-}
 
 function StatusBadge({ status }: { status: string }) {
   const s = STATUS_COLORS[status] ?? { bg: 'bg-gray-100', text: 'text-gray-600', dot: 'bg-gray-400', darkBg: 'admin-dark:bg-gray-800/30', darkText: 'admin-dark:text-gray-300' };
@@ -114,12 +108,17 @@ function Modal({ order, onClose, onConfirm, onDelete }: {
           <div className="bg-gray-50 rounded-xl p-4">
             <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">Order Items</p>
             <ul className="space-y-2">
-              {formatItems(order.items).map((item, i) => (
-                <li key={i} className="flex items-center gap-2 text-sm text-gray-700">
-                  <span className="w-5 h-5 rounded-full bg-[#B91C1C]/10 text-[#B91C1C] flex items-center justify-center text-[10px] font-bold flex-shrink-0">
-                    {i + 1}
+              {order.items.map((item, i) => (
+                <li key={i} className="flex items-center justify-between gap-2 text-sm text-gray-700">
+                  <span className="flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-full bg-[#B91C1C]/10 text-[#B91C1C] flex items-center justify-center text-[10px] font-bold flex-shrink-0">
+                      {i + 1}
+                    </span>
+                    {item.name} x{item.quantity}
                   </span>
-                  {item}
+                  <span className="font-mono text-gray-600 flex-shrink-0">
+                    {((Number(item.price) || 0) * (Number(item.quantity) || 0)).toLocaleString('ar-DZ')} DA
+                  </span>
                 </li>
               ))}
             </ul>
@@ -129,6 +128,13 @@ function Modal({ order, onClose, onConfirm, onDelete }: {
             <div className="bg-gray-50 rounded-xl p-4">
               <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Delivery Address</p>
               <p className="text-sm text-gray-700">{order.deliveryAddress}</p>
+            </div>
+          )}
+
+          {order.orderType === 'Delivery' && (
+            <div className="flex items-center justify-between bg-sky-50 rounded-xl px-4 py-3">
+              <span className="text-sm font-semibold text-sky-700">Delivery Fee</span>
+              <span className="text-sm font-bold text-sky-700">{(order.deliveryFee || 0).toLocaleString('ar-DZ')} DA</span>
             </div>
           )}
 

@@ -98,9 +98,9 @@ export default function AnalyticsPage() {
     const map = new Map<string, { name: string; orders: number; revenue: number }>();
     filteredOrders.forEach((o) => {
       (o.items || []).forEach((item) => {
-        const existing = map.get(item.itemId) ?? { name: item.name, orders: 0, revenue: 0 };
-        existing.orders += item.quantity;
-        existing.revenue += item.price * item.quantity;
+        const existing = map.get(item.itemId) ?? { name: item.name || 'Unknown Item', orders: 0, revenue: 0 };
+        existing.orders += Number(item.quantity) || 0;
+        existing.revenue += (Number(item.price) || 0) * (Number(item.quantity) || 0);
         map.set(item.itemId, existing);
       });
     });
@@ -136,8 +136,8 @@ export default function AnalyticsPage() {
       (o.items || []).forEach((item) => {
         const catId = itemToCategory.get(item.itemId) || 'Other';
         const existing = map.get(catId) ?? { revenue: 0, orders: 0 };
-        existing.revenue += item.price * item.quantity;
-        existing.orders += item.quantity;
+        existing.revenue += (Number(item.price) || 0) * (Number(item.quantity) || 0);
+        existing.orders += Number(item.quantity) || 0;
         map.set(catId, existing);
       });
     });
@@ -167,8 +167,8 @@ export default function AnalyticsPage() {
           <button
             onClick={() => setTimePeriod('7days')}
             className={`px-4 py-2 rounded-full font-semibold transition-colors ${timePeriod === '7days'
-                ? 'bg-[#B91C1C] text-white'
-                : 'bg-gray-100 text-[#1A1A1A] hover:bg-gray-200'
+              ? 'bg-[#B91C1C] text-white'
+              : 'bg-gray-100 text-[#1A1A1A] hover:bg-gray-200'
               }`}
           >
             7 Days
@@ -176,8 +176,8 @@ export default function AnalyticsPage() {
           <button
             onClick={() => setTimePeriod('30days')}
             className={`px-4 py-2 rounded-full font-semibold transition-colors ${timePeriod === '30days'
-                ? 'bg-[#B91C1C] text-white'
-                : 'bg-gray-100 text-[#1A1A1A] hover:bg-gray-200'
+              ? 'bg-[#B91C1C] text-white'
+              : 'bg-gray-100 text-[#1A1A1A] hover:bg-gray-200'
               }`}
           >
             30 Days

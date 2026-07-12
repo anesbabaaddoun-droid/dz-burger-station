@@ -19,6 +19,49 @@ export async function GET() {
     }
 }
 
+type RawOrderItem = {
+    itemId: string;
+    name?: string;
+    price?: number;
+    quantity: number;
+};
+
+async function completeItemData(item: RawOrderItem): Promise<{ itemId: string; name: string; price: number; quantity: number }> {
+    // If both name and price are already present and valid, use them as-is (e.g. Website checkout).
+    if (item.name && typeof item.price === 'number' && !isNaN(item.price)) {
+        return {
+            itemId: item.itemId,
+            name: item.name,
+            price: item.price,
+            quantity: Number(item.quantity) || 0,
+        };
+    }
+
+    // Otherwise (e.g. AI Call sending only itemId + quantity), look up the menu item to fill the gaps.
+    try {
+        const menuItemSnap = await getDoc(doc(db, 'menuItems', item.itemId));
+        if (menuItemSnap.exists()) {
+            const menuData = menuItemSnap.data();
+            return {
+                itemId: item.itemId,
+                name: item.name || menuData.name || 'Unknown Item',
+                price: typeof item.price === 'number' && !isNaN(item.price) ? item.price : (menuData.basePrice ?? 0),
+                quantity: Number(item.quantity) || 0,
+            };
+        }
+    } catch {
+        // fall through to safe default below
+    }
+
+    // Menu item not found or lookup failed — return a safe fallback instead of NaN.
+    return {
+        itemId: item.itemId,
+        name: item.name || 'Unknown Item',
+        price: typeof item.price === 'number' && !isNaN(item.price) ? item.price : 0,
+        quantity: Number(item.quantity) || 0,
+    };
+}
+
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
@@ -32,10 +75,13 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const parsedItems = typeof items === 'string' ? JSON.parse(items) : items;
+        const rawItems: RawOrderItem[] = typeof items === 'string' ? JSON.parse(items) : items;
 
-        const subtotal = parsedItems.reduce((sum: number, item: { price: number; quantity: number }) => {
-            return sum + (Number(item.price) || 0) * (Number(item.quantity) || 0);
+        // Complete any missing name/price by looking up menuItems (handles AI Call orders that only send itemId + quantity).
+        const parsedItems = await Promise.all(rawItems.map(completeItemData));
+
+        const subtotal = parsedItems.reduce((sum, item) => {
+            return sum + item.price * item.quantity;
         }, 0);
 
         // Use the fee sent by the client checkout (zone-based) or 0 for non-delivery.

@@ -13,13 +13,6 @@ interface CartSidebarProps {
   onClose: () => void;
 }
 
-type DeliveryZone = {
-  id: string;
-  neighborhood: string;
-  fee: number;
-  extraPrepMinutes: number;
-};
-
 type OrderPayload = {
   customerName: string;
   customerPhone: string;
@@ -29,7 +22,6 @@ type OrderPayload = {
   deliveryAddress: string | null;
   notes: string | null;
   deliveryFee: number;
-  extraPrepMinutes: number;
 };
 
 export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
@@ -41,45 +33,33 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [neighborhood, setNeighborhood] = useState('');
-  const [street, setStreet] = useState('');
+  const [addressDetails, setAddressDetails] = useState('');
   const [notes, setNotes] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
 
-  // Delivery zones fetched from settings
-  const [deliveryZones, setDeliveryZones] = useState<DeliveryZone[]>([]);
-  const [defaultDeliveryFee, setDefaultDeliveryFee] = useState(250);
+  const [deliveryFee, setDeliveryFee] = useState(250);
   const [settingsFetched, setSettingsFetched] = useState(false);
 
   const { mutate, isLoading } = useApiMutation<OrderPayload>('/api/orders', 'POST');
 
   const subtotal = getTotal();
 
-  // Fetch delivery zones once when checkout opens
+  // Fetch the fixed delivery fee once when checkout opens
   useEffect(() => {
     if (isCheckout && !settingsFetched) {
       fetch('/api/settings')
         .then((r) => r.json())
         .then((res) => {
-          if (res.success && res.data) {
-            setDeliveryZones(res.data.deliveryZones ?? []);
-            setDefaultDeliveryFee(res.data.defaultDeliveryFee ?? 250);
+          if (res.success && res.data && typeof res.data.deliveryFee === 'number') {
+            setDeliveryFee(res.data.deliveryFee);
           }
         })
-        .catch(() => { /* silently keep defaults */ })
+        .catch(() => { /* silently keep default */ })
         .finally(() => setSettingsFetched(true));
     }
   }, [isCheckout, settingsFetched]);
 
-  // Compute delivery fee + extra prep from selected neighborhood
-  const matchedZone = deliveryZones.find(
-    (z) => z.neighborhood === neighborhood && neighborhood !== '' && neighborhood !== '__other__'
-  );
-  const computedDeliveryFee =
-    orderType === 'delivery'
-      ? (matchedZone ? matchedZone.fee : defaultDeliveryFee)
-      : 0;
-  const computedExtraPrepMinutes = matchedZone ? matchedZone.extraPrepMinutes : 0;
-
+  const computedDeliveryFee = orderType === 'delivery' ? deliveryFee : 0;
   const grandTotal = subtotal + computedDeliveryFee;
 
   if (!isOpen) return null;
@@ -104,7 +84,7 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
 
     const deliveryAddress =
       orderType === 'delivery'
-        ? [neighborhood === '__other__' ? '' : neighborhood, street].filter(Boolean).join(', ') || null
+        ? [neighborhood, addressDetails].filter(Boolean).join(', ') || null
         : null;
 
     const orderItems = items.map((item) => ({
@@ -123,7 +103,6 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
       deliveryAddress,
       notes: notes.trim() || null,
       deliveryFee: computedDeliveryFee,
-      extraPrepMinutes: computedExtraPrepMinutes,
     };
 
     const success = await mutate(payload);
@@ -189,8 +168,8 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
                       key={t}
                       onClick={() => setOrderType(t)}
                       className={`py-2.5 rounded-full font-semibold text-sm capitalize border transition-colors ${orderType === t
-                          ? 'bg-[#B91C1C] text-[#F3EDE3] border-[#B91C1C]'
-                          : 'bg-[#1F1812] text-[#A89A8C] border-[#3A2C22]'
+                        ? 'bg-[#B91C1C] text-[#F3EDE3] border-[#B91C1C]'
+                        : 'bg-[#1F1812] text-[#A89A8C] border-[#3A2C22]'
                         }`}
                     >
                       {t}
@@ -231,25 +210,21 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
                     <label className="block text-sm font-semibold text-[#F3EDE3] mb-2">
                       Neighborhood <span className="text-[#B91C1C]">*</span>
                     </label>
-                    <select
-                      value={neighborhood}
-                      onChange={(e) => setNeighborhood(e.target.value)}
-                      className="w-full px-4 py-2.5 bg-[#1F1812] border border-[#3A2C22] text-[#F3EDE3] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#B91C1C] appearance-none"
-                    >
-                      <option value="">— Select your neighborhood —</option>
-                      {deliveryZones.map((z) => (
-                        <option key={z.id} value={z.neighborhood}>{z.neighborhood}</option>
-                      ))}
-                      <option value="__other__">Other (not listed)</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-[#F3EDE3] mb-2">Street</label>
                     <input
                       type="text"
-                      value={street}
-                      onChange={(e) => setStreet(e.target.value)}
-                      placeholder="Street name"
+                      value={neighborhood}
+                      onChange={(e) => setNeighborhood(e.target.value)}
+                      placeholder="e.g. Bab Ezzouar"
+                      className="w-full px-4 py-2.5 bg-[#1F1812] border border-[#3A2C22] text-[#F3EDE3] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#B91C1C]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-[#F3EDE3] mb-2">Address Details (optional)</label>
+                    <input
+                      type="text"
+                      value={addressDetails}
+                      onChange={(e) => setAddressDetails(e.target.value)}
+                      placeholder="Street, building, floor…"
                       className="w-full px-4 py-2.5 bg-[#1F1812] border border-[#3A2C22] text-[#F3EDE3] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#B91C1C]"
                     />
                   </div>
@@ -283,13 +258,7 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
             {orderType === 'delivery' ? (
               <div className="flex items-center justify-between text-sm">
                 <span className="text-[#A89A8C]">Delivery fee</span>
-                <span className="font-mono text-[#E8A33D]">
-                  {neighborhood && neighborhood !== '__other__' && neighborhood !== ''
-                    ? formatDA(computedDeliveryFee)
-                    : neighborhood === '__other__'
-                      ? `~${formatDA(defaultDeliveryFee)} (to confirm)`
-                      : '— select neighborhood'}
-                </span>
+                <span className="font-mono text-[#E8A33D]">{formatDA(computedDeliveryFee)}</span>
               </div>
             ) : (
               <div className="flex items-center justify-between text-sm">
@@ -396,7 +365,7 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-[#A89A8C]">Delivery</span>
-                <span className="font-mono text-[#E8A33D]">Confirmed by phone</span>
+                <span className="font-mono text-[#E8A33D]">Calculated at checkout</span>
               </div>
               <button
                 onClick={() => setIsCheckout(true)}

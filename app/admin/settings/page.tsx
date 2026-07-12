@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { Save, Trash2, Plus } from 'lucide-react';
+import { Save } from 'lucide-react';
 import { useFirestoreDoc } from '@/hooks/useFirestoreDoc';
 import { useApiMutation } from '@/hooks/useApiMutation';
 
@@ -13,13 +13,6 @@ interface DaySchedule {
 
 interface WorkingHours {
   [day: string]: DaySchedule;
-}
-
-interface DeliveryZone {
-  id: string;
-  neighborhood: string;
-  fee: number;
-  extraPrepMinutes: number;
 }
 
 interface SettingsData {
@@ -35,8 +28,7 @@ interface SettingsData {
   browserNotifications: boolean;
   workingHours: WorkingHours;
   logoUrl?: string;
-  deliveryZones: DeliveryZone[];
-  defaultDeliveryFee: number;
+  deliveryFee: number;
 }
 
 const DAYS_ORDER = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
@@ -56,8 +48,7 @@ const DEFAULT_SETTINGS: SettingsData = {
     acc[day] = { isOpen: true, open: '11:00', close: '23:00' };
     return acc;
   }, {} as WorkingHours),
-  deliveryZones: [],
-  defaultDeliveryFee: 250,
+  deliveryFee: 250,
 };
 
 export default function SettingsPage() {
@@ -67,7 +58,6 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState<SettingsData>(DEFAULT_SETTINGS);
   const [saved, setSaved] = useState(false);
 
-  // عند وصول البيانات من Firestore، نعبّي الـ state المحلي
   useEffect(() => {
     if (data) {
       setSettings({
@@ -83,8 +73,7 @@ export default function SettingsPage() {
         browserNotifications: data.browserNotifications ?? false,
         workingHours: data.workingHours ?? DEFAULT_SETTINGS.workingHours,
         logoUrl: data.logoUrl,
-        deliveryZones: data.deliveryZones ?? [],
-        defaultDeliveryFee: data.defaultDeliveryFee ?? 250,
+        deliveryFee: data.deliveryFee ?? 250,
       });
     }
   }, [data]);
@@ -105,35 +94,6 @@ export default function SettingsPage() {
     },
     []
   );
-
-  const handleAddZone = useCallback(() => {
-    const newZone: DeliveryZone = {
-      id: Date.now().toString(),
-      neighborhood: '',
-      fee: 0,
-      extraPrepMinutes: 0,
-    };
-    setSettings((prev) => ({ ...prev, deliveryZones: [...prev.deliveryZones, newZone] }));
-  }, []);
-
-  const handleUpdateZone = useCallback(
-    (id: string, field: keyof Omit<DeliveryZone, 'id'>, value: string | number) => {
-      setSettings((prev) => ({
-        ...prev,
-        deliveryZones: prev.deliveryZones.map((z) =>
-          z.id === id ? { ...z, [field]: value } : z
-        ),
-      }));
-    },
-    []
-  );
-
-  const handleRemoveZone = useCallback((id: string) => {
-    setSettings((prev) => ({
-      ...prev,
-      deliveryZones: prev.deliveryZones.filter((z) => z.id !== id),
-    }));
-  }, []);
 
   const scheduleEntries = useMemo(
     () => DAYS_ORDER.map((day) => ({ day, ...settings.workingHours[day] })),
@@ -243,91 +203,22 @@ export default function SettingsPage() {
               className="w-full"
             />
           </div>
-        </div>
-      </div>
 
-      {/* Delivery Zones */}
-      <div className="bg-white admin-dark:bg-[#111111] rounded-xl border border-[#E5E7EB] admin-dark:border-[#2E2E2E] p-6">
-        <h2 className="text-xl font-bold text-[#1A1A1A] admin-dark:text-white mb-1">Delivery Zones</h2>
-        <p className="text-sm text-[#6B7280] mb-6">Configure per-neighborhood fees and extra preparation time for delivery orders.</p>
-
-        {/* Default delivery fee */}
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 bg-gray-50 admin-dark:bg-[#1A1A1A] rounded-lg mb-4">
-          <label className="font-semibold text-[#1A1A1A] admin-dark:text-white text-sm sm:w-56 shrink-0">
-            Default Delivery Fee (DA)
-          </label>
-          <input
-            type="number"
-            min="0"
-            value={settings.defaultDeliveryFee}
-            onChange={(e) => setSettings({ ...settings, defaultDeliveryFee: Number(e.target.value) })}
-            className="w-full sm:w-36 px-3 py-2 border border-[#E5E7EB] admin-dark:border-[#2E2E2E] rounded-lg text-sm bg-white admin-dark:bg-[#0D0D0D] text-[#1A1A1A] admin-dark:text-white focus:outline-none focus:ring-2 focus:ring-[#B91C1C]"
-          />
-          <p className="text-xs text-[#6B7280]">Applied when the customer's neighborhood is not in the list below.</p>
-        </div>
-
-        {/* Zone rows */}
-        <div className="space-y-2 mb-4">
-          {settings.deliveryZones.length === 0 && (
-            <p className="text-sm text-[#9CA3AF] text-center py-4">No zones configured. Add one below.</p>
-          )}
-          {settings.deliveryZones.map((zone) => (
-            <div key={zone.id} className="grid grid-cols-[1fr_auto_auto_auto] sm:grid-cols-[2fr_1fr_1fr_auto] gap-2 items-center p-3 bg-gray-50 admin-dark:bg-[#1A1A1A] rounded-lg">
-              <input
-                type="text"
-                placeholder="Neighborhood name"
-                value={zone.neighborhood}
-                onChange={(e) => handleUpdateZone(zone.id, 'neighborhood', e.target.value)}
-                className="px-3 py-2 border border-[#E5E7EB] admin-dark:border-[#2E2E2E] rounded-lg text-sm bg-white admin-dark:bg-[#0D0D0D] text-[#1A1A1A] admin-dark:text-white focus:outline-none focus:ring-2 focus:ring-[#B91C1C] w-full"
-              />
-              <div className="flex items-center gap-1">
-                <input
-                  type="number"
-                  min="0"
-                  placeholder="Fee DA"
-                  value={zone.fee}
-                  onChange={(e) => handleUpdateZone(zone.id, 'fee', Number(e.target.value))}
-                  className="px-3 py-2 border border-[#E5E7EB] admin-dark:border-[#2E2E2E] rounded-lg text-sm bg-white admin-dark:bg-[#0D0D0D] text-[#1A1A1A] admin-dark:text-white focus:outline-none focus:ring-2 focus:ring-[#B91C1C] w-full"
-                />
-              </div>
-              <div className="flex items-center gap-1">
-                <input
-                  type="number"
-                  min="0"
-                  placeholder="+min"
-                  value={zone.extraPrepMinutes}
-                  onChange={(e) => handleUpdateZone(zone.id, 'extraPrepMinutes', Number(e.target.value))}
-                  className="px-3 py-2 border border-[#E5E7EB] admin-dark:border-[#2E2E2E] rounded-lg text-sm bg-white admin-dark:bg-[#0D0D0D] text-[#1A1A1A] admin-dark:text-white focus:outline-none focus:ring-2 focus:ring-[#B91C1C] w-full"
-                />
-              </div>
-              <button
-                onClick={() => handleRemoveZone(zone.id)}
-                className="p-2 text-red-500 hover:bg-red-50 admin-dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                title="Remove zone"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
+          <div className="p-3 bg-gray-50 rounded-lg">
+            <div className="flex items-center justify-between mb-1">
+              <label htmlFor="deliveryFee" className="font-semibold text-[#1A1A1A]">Delivery Fee (DA)</label>
             </div>
-          ))}
-        </div>
-
-        {/* Column headers hint */}
-        {settings.deliveryZones.length > 0 && (
-          <div className="grid grid-cols-[1fr_auto_auto_auto] sm:grid-cols-[2fr_1fr_1fr_auto] gap-2 px-3 mb-1">
-            <span className="text-[10px] uppercase tracking-wider text-[#9CA3AF]">Neighborhood</span>
-            <span className="text-[10px] uppercase tracking-wider text-[#9CA3AF]">Fee (DA)</span>
-            <span className="text-[10px] uppercase tracking-wider text-[#9CA3AF]">+Prep (min)</span>
-            <span />
+            <p className="text-xs text-[#6B7280] mb-2">Applied automatically to every delivery order.</p>
+            <input
+              id="deliveryFee"
+              type="number"
+              min="0"
+              value={settings.deliveryFee}
+              onChange={(e) => setSettings({ ...settings, deliveryFee: Number(e.target.value) })}
+              className="w-full sm:w-48 px-4 py-2 border border-[#E5E7EB] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#B91C1C]"
+            />
           </div>
-        )}
-
-        <button
-          onClick={handleAddZone}
-          className="flex items-center gap-2 px-4 py-2 border border-[#E5E7EB] admin-dark:border-[#2E2E2E] text-[#374151] admin-dark:text-white hover:bg-gray-50 admin-dark:hover:bg-[#1A1A1A] rounded-lg text-sm font-semibold transition-colors"
-        >
-          <Plus className="h-4 w-4" />
-          Add Zone
-        </button>
+        </div>
       </div>
 
       {/* Weekly Schedule */}

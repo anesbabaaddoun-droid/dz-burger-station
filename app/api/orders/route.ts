@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
 
-        const { customerName, customerPhone, orderType, items, deliveryAddress, notes, source, deliveryFee: bodyDeliveryFee, extraPrepMinutes: bodyExtraPrepMinutes } = body;
+        const { customerName, customerPhone, orderType, items, deliveryAddress, notes, source } = body;
 
         if (!customerName || !customerPhone || !orderType || !items) {
             return NextResponse.json(
@@ -84,21 +84,23 @@ export async function POST(request: NextRequest) {
             return sum + item.price * item.quantity;
         }, 0);
 
-        // Use the fee sent by the client checkout (zone-based) or 0 for non-delivery.
-        const deliveryFee = orderType === 'Delivery' ? (Number(bodyDeliveryFee) || 0) : 0;
-        const extraPrepMinutes = Number(bodyExtraPrepMinutes) || 0;
-        const total = subtotal + deliveryFee;
-
-        // Fetch base preparation time from settings so estimatedPrepMinutes is persisted on the order.
+        // Fetch settings once (used for both delivery fee and base prep time),
+        // so the fee is always authoritative and consistent regardless of who places the order
+        // (Website checkout or the Vapi AI phone agent).
         let basePrepTime = 25; // safe fallback
+        let configuredDeliveryFee = 0;
         try {
             const settingsSnap = await getDoc(doc(db, 'settings', 'config'));
             if (settingsSnap.exists()) {
-                basePrepTime = settingsSnap.data().preparationTime ?? 25;
+                const settingsData = settingsSnap.data();
+                basePrepTime = settingsData.preparationTime ?? 25;
+                configuredDeliveryFee = settingsData.deliveryFee ?? 0;
             }
-        } catch { /* keep fallback */ }
+        } catch { /* keep fallbacks */ }
 
-        const estimatedPrepMinutes = basePrepTime + extraPrepMinutes;
+        const deliveryFee = orderType === 'Delivery' ? configuredDeliveryFee : 0;
+        const total = subtotal + deliveryFee;
+        const estimatedPrepMinutes = basePrepTime;
 
         const order = {
             customerName,

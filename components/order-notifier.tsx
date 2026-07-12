@@ -1,16 +1,26 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
-import { Bell } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { useFirestoreDoc } from '@/hooks/useFirestoreDoc';
+import { Bell, X } from 'lucide-react';
 
-/**
- * Simulates real-time "new order" sound notifications for the Admin panel.
- * In production this listens to a websocket/Firestore onSnapshot for new
- * orders with status `received` or `pendingApproval` and fires the same beep.
- */
+type ToastData = {
+  message: string;
+  clickable: boolean;
+};
+
 export function OrderNotifier() {
-  const [toast, setToast] = useState<string | null>(null);
+  const router = useRouter();
+  const [toast, setToast] = useState<ToastData | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
+  const knownIdsRef = useRef<Set<string> | null>(null);
+  const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const { data: settings } = useFirestoreDoc('settings', 'config');
+  const soundEnabled = settings?.soundNotifications !== false;
 
   const playBeep = () => {
     try {
@@ -20,7 +30,7 @@ export function OrderNotifier() {
       const gain = ctx.createGain();
       osc.type = 'sine';
       osc.frequency.setValueAtTime(880, ctx.currentTime);
-      gain.gain.setValueAtTime(0.15, ctx.currentTime);
+      gain.gain.setValueAtTime(0.35, ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
       osc.connect(gain);
       gain.connect(ctx.destination);
@@ -31,23 +41,76 @@ export function OrderNotifier() {
     }
   };
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const soundEnabled = localStorage.getItem('soundNotifications') !== 'false';
-      if (soundEnabled) playBeep();
-      setToast('🔔 New order received — check Orders');
-      setTimeout(() => setToast(null), 4000);
-    }, 60000); // demo cadence; real backend would push events instantly
+  const showToast = (message: string, clickable: boolean) => {
+    setToast({ message, clickable });
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    toastTimeoutRef.current = setTimeout(() => setToast(null), 6000);
+  };
 
-    return () => clearInterval(interval);
-  }, []);
+  useEffect(() => {
+    const q = query(collection(db, 'orders'), where('status', '==', 'Pending'));
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const currentIds = new Set(snapshot.docs.map((d) => d.id));
+
+      if (knownIdsRef.current === null) {
+        knownIdsRef.current = currentIds;
+        if (currentIds.size > 0) {
+          showToast(
+            `🔔 ${currentIds.size} pending order${currentIds.size > 1 ? 's' : ''} waiting — check Orders`,
+            true
+          );
+        }
+        return;
+      }
+
+      const newIds = [...currentIds].filter((id) => !knownIdsRef.current!.has(id));
+      knownIdsRef.current = currentIds;
+
+      if (newIds.length > 0) {
+        if (soundEnabled) playBeep();
+        showToast(
+          newIds.length === 1
+            ? '🔔 New order received — check Orders'
+            : `🔔 ${newIds.length} new orders received — check Orders`,
+          true
+        );
+      }
+    });
+
+    return () => {
+      unsubscribe();
+      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [soundEnabled]);
 
   if (!toast) return null;
 
+  const handleClick = () => {
+    if (toast.clickable) {
+      router.push('/admin/orders');
+      setToast(null);
+    }
+  };
+
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-xl bg-[#1A1A1A] text-white px-4 py-3 shadow-xl animate-in slide-in-from-bottom-4">
-      <Bell className="h-5 w-5 text-[#E8A33D]" />
-      <span className="text-sm font-semibold">{toast}</span>
+    <div
+      onClick={handleClick}
+      className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-xl bg-[#1A1A1A] text-white px-4 py-3 shadow-xl animate-in slide-in-from-bottom-4 ${toast.clickable ? 'cursor-pointer hover:bg-[#2A2A2A]' : ''
+        } transition-colors`}
+    >
+      <Bell className="h-5 w-5 text-[#E8A33D] flex-shrink-0" />
+      <span className="text-sm font-semibold">{toast.message}</span>
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          setToast(null);
+        }}
+        className="ml-1 text-white/60 hover:text-white transition-colors"
+      >
+        <X className="h-4 w-4" />
+      </button>
     </div>
   );
 }

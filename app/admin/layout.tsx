@@ -107,8 +107,8 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                 <Link key={item.href} href={item.href}>
                   <div
                     className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 ${isActive
-                        ? 'bg-[#B91C1C] text-white shadow-md shadow-[#B91C1C]/20'
-                        : 'text-[#6B7280] hover:bg-gray-100 hover:translate-x-0.5'
+                      ? 'bg-[#B91C1C] text-white shadow-md shadow-[#B91C1C]/20'
+                      : 'text-[#6B7280] hover:bg-gray-100 hover:translate-x-0.5'
                       }`}
                   >
                     <Icon className="h-[18px] w-[18px] flex-shrink-0" />
@@ -130,7 +130,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           </div>
         </aside>
 
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col min-w-0">
           <header className="h-20 bg-white border-b border-[#E5E7EB] px-6 flex items-center justify-between sticky top-0 z-40 shadow-sm">
             <div className="flex items-center gap-4">
               <button

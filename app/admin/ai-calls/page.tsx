@@ -176,7 +176,7 @@ export default function AiCallsPage() {
                 </div>
 
                 <div className="flex justify-between items-center gap-2">
-                  <span className="text-xs text-[#6B7280] truncate flex-1">
+                  <span className="text-xs text-[#6B7280] truncate flex-1 min-w-0">
                     {call.summary ? `${call.summary.slice(0, 40)}...` : 'No summary'}
                   </span>
                   <button

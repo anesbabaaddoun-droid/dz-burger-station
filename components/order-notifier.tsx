@@ -22,10 +22,13 @@ export function OrderNotifier() {
   const { data: settings } = useFirestoreDoc('settings', 'config');
   const soundEnabled = settings?.soundNotifications !== false;
 
-  const playBeep = () => {
+  const playBeep = async () => {
     try {
       const ctx = audioCtxRef.current ?? new (window.AudioContext || (window as any).webkitAudioContext)();
       audioCtxRef.current = ctx;
+      if (ctx.state === 'suspended') {
+        await ctx.resume();
+      }
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = 'sine';
@@ -36,8 +39,8 @@ export function OrderNotifier() {
       gain.connect(ctx.destination);
       osc.start();
       osc.stop(ctx.currentTime + 0.5);
-    } catch {
-      // ignore — audio not available in this environment
+    } catch (err) {
+      console.error('[OrderNotifier] playBeep failed:', err);
     }
   };
 
@@ -48,31 +51,37 @@ export function OrderNotifier() {
   };
 
   useEffect(() => {
+    const unlockAudio = () => {
+      const ctx = audioCtxRef.current ?? new (window.AudioContext || (window as any).webkitAudioContext)();
+      audioCtxRef.current = ctx;
+      if (ctx.state === 'suspended') ctx.resume();
+    };
+    window.addEventListener('click', unlockAudio);
+    return () => window.removeEventListener('click', unlockAudio);
+  }, []);
+
+  useEffect(() => {
     const q = query(collection(db, 'orders'), where('status', '==', 'Pending'));
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const currentIds = new Set(snapshot.docs.map((d) => d.id));
-
-      if (knownIdsRef.current === null) {
-        knownIdsRef.current = currentIds;
-        if (currentIds.size > 0) {
-          showToast(
-            `🔔 ${currentIds.size} pending order${currentIds.size > 1 ? 's' : ''} waiting — check Orders`,
-            true
-          );
-        }
-        return;
-      }
-
-      const newIds = [...currentIds].filter((id) => !knownIdsRef.current!.has(id));
+      const isFirstLoad = knownIdsRef.current === null;
+      const previousIds = knownIdsRef.current ?? new Set<string>();
+      const newIds = [...currentIds].filter((id) => !previousIds.has(id));
       knownIdsRef.current = currentIds;
 
-      if (newIds.length > 0) {
-        if (soundEnabled) playBeep();
+      // Always notify (with sound) whenever there is at least one pending
+      // order to show, whether it's the first load or a fresh arrival.
+      const countToAnnounce = isFirstLoad ? currentIds.size : newIds.length;
+
+      if (countToAnnounce > 0) {
+        if (soundEnabled) void playBeep();
         showToast(
-          newIds.length === 1
-            ? '🔔 New order received — check Orders'
-            : `🔔 ${newIds.length} new orders received — check Orders`,
+          isFirstLoad
+            ? `🔔 ${countToAnnounce} pending order${countToAnnounce > 1 ? 's' : ''} waiting — check Orders`
+            : countToAnnounce === 1
+              ? '🔔 New order received — check Orders'
+              : `🔔 ${countToAnnounce} new orders received — check Orders`,
           true
         );
       }
